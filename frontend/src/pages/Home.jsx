@@ -587,7 +587,7 @@ const MemberCard = ({ name, role, color, batch, themeColor, img }) => {
   const accentColor = themeColor || color;
 
   const cardBgStyle = {
-    backgroundColor: 'rgba(255, 255, 255, 0.72)',
+    backgroundColor: 'rgba(255, 255, 255, 0.88)',
     borderRadius: '24px',
     padding: '16px',
     display: 'flex',
@@ -806,8 +806,8 @@ const TeamSection = () => {
           <div style={{
             display: 'flex',
             gap: '0.5rem',
-            background: 'rgba(0, 0, 0, 0.05)',
-            border: '1px solid rgba(0, 0, 0, 0.08)',
+            background: 'white',
+            border: '1px solid rgba(0, 0, 0, 0.05)',
             padding: '0.5rem',
             borderRadius: '50px',
             boxShadow: '0 10px 25px rgba(0,0,0,0.05)',
