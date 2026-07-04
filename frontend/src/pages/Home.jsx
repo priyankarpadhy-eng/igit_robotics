@@ -587,7 +587,7 @@ const MemberCard = ({ name, role, color, batch, themeColor, img }) => {
   const accentColor = themeColor || color;
 
   const cardBgStyle = {
-    backgroundColor: '#ffffff',
+    backgroundColor: 'rgba(255, 255, 255, 0.72)',
     borderRadius: '24px',
     padding: '16px',
     display: 'flex',
@@ -734,9 +734,9 @@ const TeamSection = () => {
             minWidth: 200.00,
             scale: 1.00,
             scaleMobile: 1.00,
-            backgroundColor: 0x0f172a,
-            color: 0xfbc531,
-            color2: 0xffffff
+            backgroundColor: 0xffffff,
+            color: 0x0f172a,
+            color2: 0x64748b
           });
         }
       }, 100);
@@ -778,10 +778,10 @@ const TeamSection = () => {
 
   const tabMeta = {
     leadership: {
-      theme: '#fbc531',
+      theme: '#0f172a',
     },
     alumni: {
-      theme: '#ffffff',
+      theme: '#fbc531',
     },
   };
 
@@ -793,10 +793,10 @@ const TeamSection = () => {
       className="team-section"
       ref={vantaRef}
       style={{
-        borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+        borderTop: '2px solid black',
         position: 'relative',
         overflow: 'hidden',
-        backgroundColor: '#0f172a'
+        backgroundColor: '#ffffff'
       }}
     >
 
@@ -806,11 +806,11 @@ const TeamSection = () => {
           <div style={{
             display: 'flex',
             gap: '0.5rem',
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            background: 'rgba(0, 0, 0, 0.05)',
+            border: '1px solid rgba(0, 0, 0, 0.08)',
             padding: '0.5rem',
             borderRadius: '50px',
-            boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.05)',
             flexWrap: 'wrap'
           }}>
             {['leadership', 'alumni'].map(tab => (
@@ -819,7 +819,7 @@ const TeamSection = () => {
                 onClick={() => setActiveTab(tab)}
                 style={{
                   background: activeTab === tab ? meta.theme : 'transparent',
-                  color: activeTab === tab ? '#0f172a' : 'rgba(255, 255, 255, 0.6)',
+                  color: activeTab === tab ? (meta.theme === '#fbc531' ? '#0f172a' : 'white') : '#64748b',
                   border: 'none',
                   padding: '0.6rem 2rem',
                   borderRadius: '50px',
