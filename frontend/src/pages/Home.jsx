@@ -734,9 +734,9 @@ const TeamSection = () => {
             minWidth: 200.00,
             scale: 1.00,
             scaleMobile: 1.00,
-            backgroundColor: 0xffffff,
-            color: 0x0f172a,
-            color2: 0x64748b
+            backgroundColor: 0x0f172a,
+            color: 0xfbc531,
+            color2: 0xffffff
           });
         }
       }, 100);
@@ -777,17 +777,11 @@ const TeamSection = () => {
   });
 
   const tabMeta = {
-    faculty: {
-      bg: '#f0fdf4',
-      theme: '#22c55e',
-    },
     leadership: {
-      bg: '#f8fafc',
-      theme: '#0f172a',
+      theme: '#fbc531',
     },
     alumni: {
-      bg: '#fff7ed',
-      theme: '#f97316',
+      theme: '#ffffff',
     },
   };
 
@@ -799,9 +793,10 @@ const TeamSection = () => {
       className="team-section"
       ref={vantaRef}
       style={{
-        borderTop: '2px solid black',
+        borderTop: '1px solid rgba(255, 255, 255, 0.1)',
         position: 'relative',
         overflow: 'hidden',
+        backgroundColor: '#0f172a'
       }}
     >
 
@@ -811,10 +806,11 @@ const TeamSection = () => {
           <div style={{
             display: 'flex',
             gap: '0.5rem',
-            background: 'white',
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
             padding: '0.5rem',
             borderRadius: '50px',
-            boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
             flexWrap: 'wrap'
           }}>
             {['leadership', 'alumni'].map(tab => (
@@ -823,7 +819,7 @@ const TeamSection = () => {
                 onClick={() => setActiveTab(tab)}
                 style={{
                   background: activeTab === tab ? meta.theme : 'transparent',
-                  color: activeTab === tab ? 'white' : '#64748b',
+                  color: activeTab === tab ? '#0f172a' : 'rgba(255, 255, 255, 0.6)',
                   border: 'none',
                   padding: '0.6rem 2rem',
                   borderRadius: '50px',
