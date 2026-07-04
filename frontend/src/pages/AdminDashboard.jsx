@@ -39,14 +39,117 @@ export default function AdminDashboard() {
   const [toast, setToast] = useState({ type: '', text: '' });
 
   const [showGitHelper, setShowGitHelper] = useState(false);
-  const [gitUser, setGitUser] = useState('priyankarpadhy-eng');
-  const [gitRepo, setGitRepo] = useState('igit_robotics');
+  const [activeField, setActiveField] = useState('events'); // 'events' | 'gallery' | 'members'
+  const [helperTab, setHelperTab] = useState('upload'); // 'upload' | 'generator'
+
+  // Manual Generator States
+  const [gitUser, setGitUser] = useState(import.meta.env.VITE_GITHUB_OWNER || 'priyankarpadhy-eng');
+  const [gitRepo, setGitRepo] = useState(import.meta.env.VITE_GITHUB_REPO || 'igit_robotics_storage');
   const [gitTag, setGitTag] = useState('v1.0.0');
   const [gitFile, setGitFile] = useState('');
+
+  // File Upload States
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [customFileName, setCustomFileName] = useState('');
+  const [uploadingStatus, setUploadingStatus] = useState('');
+  const [generatedUrl, setGeneratedUrl] = useState('');
 
   const triggerToast = (text, type = 'success') => {
     setToast({ text, type });
     setTimeout(() => setToast({ text: '', type: '' }), 3000);
+  };
+
+  const handleGitFileUpload = async (e) => {
+    e.preventDefault();
+    if (!selectedFile) {
+      triggerToast('Please select a file first', 'error');
+      return;
+    }
+
+    const token = import.meta.env.VITE_GITHUB_TOKEN;
+    const owner = import.meta.env.VITE_GITHUB_OWNER || 'priyankarpadhy-eng';
+    const repo = import.meta.env.VITE_GITHUB_REPO || 'igit_robotics_storage';
+    
+    if (!token) {
+      triggerToast('GitHub token configuration is missing', 'error');
+      return;
+    }
+
+    setUploadingStatus('INITIATING');
+    try {
+      setUploadingStatus('RESOLVING_RELEASE');
+      const latestUrl = `https://api.github.com/repos/${owner}/${repo}/releases/latest`;
+      const latestRes = await fetch(latestUrl, {
+        headers: { Authorization: `token ${token}` }
+      });
+
+      let release;
+      if (latestRes.status === 404) {
+        setUploadingStatus('CREATING_RELEASE');
+        const createRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`, {
+          method: 'POST',
+          headers: {
+            Authorization: `token ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            tag_name: 'v1.0.0',
+            name: 'Asset Store v1.0.0',
+            body: 'Automated file storage for IGIT Robotics web portal.',
+            draft: false,
+            prerelease: false
+          })
+         });
+         if (!createRes.ok) throw new Error('Failed to create release');
+         release = await createRes.json();
+      } else {
+        if (!latestRes.ok) throw new Error('Failed to retrieve release');
+        release = await latestRes.json();
+      }
+
+      setUploadingStatus('UPLOADING_FILE');
+      const filename = customFileName || selectedFile.name;
+      const rawUploadUrl = release.upload_url.split('{')[0];
+      const uploadUrl = `${rawUploadUrl}?name=${encodeURIComponent(filename)}`;
+
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `token ${token}`,
+          'Content-Type': selectedFile.type || 'application/octet-stream'
+        },
+        body: selectedFile
+      });
+
+      if (uploadRes.status === 422) {
+        throw new Error('A file with this name already exists. Please use a unique filename.');
+      }
+      if (!uploadRes.ok) {
+        const errorData = await uploadRes.json().catch(() => ({}));
+        throw new Error(errorData.message || 'File upload rejected by GitHub');
+      }
+
+      const assetData = await uploadRes.json();
+      setGeneratedUrl(assetData.browser_download_url);
+      setUploadingStatus('COMPLETE');
+      triggerToast('Asset uploaded successfully to GitHub Release');
+    } catch (err) {
+      console.error(err);
+      setUploadingStatus('ERROR');
+      triggerToast(err.message || 'GitHub upload failed', 'error');
+    }
+  };
+
+  const handleInsertLink = () => {
+    if (!generatedUrl) return;
+    if (activeField === 'events') {
+      setEventForm(prev => ({ ...prev, image: generatedUrl }));
+    } else if (activeField === 'gallery') {
+      setGalleryForm(prev => ({ ...prev, url: generatedUrl }));
+    } else if (activeField === 'members') {
+      setMemberForm(prev => ({ ...prev, img: generatedUrl }));
+    }
+    setShowGitHelper(false);
   };
 
   const loadAllData = async () => {
@@ -331,7 +434,7 @@ export default function AdminDashboard() {
                     <div className="form-group">
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                         <label style={{ margin: 0 }}>IMAGE URL</label>
-                        <button type="button" onClick={() => setShowGitHelper(true)} style={{ background: 'none', border: 'none', color: '#fbc531', fontSize: '0.65rem', fontWeight: 900, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
+                        <button type="button" onClick={() => { setActiveField('events'); setGeneratedUrl(''); setSelectedFile(null); setCustomFileName(''); setUploadingStatus(''); setShowGitHelper(true); }} style={{ background: 'none', border: 'none', color: '#fbc531', fontSize: '0.65rem', fontWeight: 900, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
                           GitHub Asset Linker?
                         </button>
                       </div>
@@ -416,7 +519,7 @@ export default function AdminDashboard() {
                     <div className="form-group">
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                         <label style={{ margin: 0 }}>IMAGE URL</label>
-                        <button type="button" onClick={() => setShowGitHelper(true)} style={{ background: 'none', border: 'none', color: '#fbc531', fontSize: '0.65rem', fontWeight: 900, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
+                        <button type="button" onClick={() => { setActiveField('gallery'); setGeneratedUrl(''); setSelectedFile(null); setCustomFileName(''); setUploadingStatus(''); setShowGitHelper(true); }} style={{ background: 'none', border: 'none', color: '#fbc531', fontSize: '0.65rem', fontWeight: 900, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
                           GitHub Asset Linker?
                         </button>
                       </div>
@@ -512,7 +615,7 @@ export default function AdminDashboard() {
                     <div className="form-group">
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                         <label style={{ margin: 0 }}>IMAGE FILENAME / PATH</label>
-                        <button type="button" onClick={() => setShowGitHelper(true)} style={{ background: 'none', border: 'none', color: '#fbc531', fontSize: '0.65rem', fontWeight: 900, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
+                        <button type="button" onClick={() => { setActiveField('members'); setGeneratedUrl(''); setSelectedFile(null); setCustomFileName(''); setUploadingStatus(''); setShowGitHelper(true); }} style={{ background: 'none', border: 'none', color: '#fbc531', fontSize: '0.65rem', fontWeight: 900, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
                           GitHub Asset Linker?
                         </button>
                       </div>
@@ -667,81 +770,201 @@ export default function AdminDashboard() {
             background: '#090d18',
             border: '1px solid rgba(255,255,255,0.08)',
             borderRadius: '16px',
-            maxWidth: '500px',
+            maxWidth: '520px',
             width: '100%',
             padding: '28px',
             boxShadow: '0 25px 50px rgba(0,0,0,0.5)',
             boxSizing: 'border-box',
             textAlign: 'left'
           }}>
-            <h3 style={{ margin: '0 0 8px 0', fontSize: '1.4rem', fontWeight: 800, color: 'white' }}>GitHub Asset Linker</h3>
-            <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 20px 0', lineHeight: 1.5 }}>
-              Use GitHub Releases as a free, lightning-fast host for your images, videos, and documents. Upload the asset on GitHub, then generate the clean link below:
-            </p>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '1.4rem', fontWeight: 800, color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <svg style={{ width: '20px', height: '20px', color: '#fbc531' }} viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
+              </svg>
+              GitHub Asset Storage
+            </h3>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '0.65rem', fontWeight: 900, color: '#64748b' }}>GITHUB USERNAME</label>
-                <input 
-                  type="text" 
-                  value={gitUser} 
-                  onChange={e => setGitUser(e.target.value)} 
-                  style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', height: '36px', padding: '0 10px', color: 'white', fontSize: '0.85rem' }} 
-                />
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '0.65rem', fontWeight: 900, color: '#64748b' }}>REPOSITORY NAME</label>
-                <input 
-                  type="text" 
-                  value={gitRepo} 
-                  onChange={e => setGitRepo(e.target.value)} 
-                  style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', height: '36px', padding: '0 10px', color: 'white', fontSize: '0.85rem' }} 
-                />
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '0.65rem', fontWeight: 900, color: '#64748b' }}>RELEASE TAG / VERSION</label>
-                <input 
-                  type="text" 
-                  value={gitTag} 
-                  onChange={e => setGitTag(e.target.value)} 
-                  style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', height: '36px', padding: '0 10px', color: 'white', fontSize: '0.85rem' }} 
-                />
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '0.65rem', fontWeight: 900, color: '#64748b' }}>FILENAME WITH EXTENSION</label>
-                <input 
-                  type="text" 
-                  value={gitFile} 
-                  onChange={e => setGitFile(e.target.value)} 
-                  placeholder="e.g. robot-action.jpg"
-                  style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', height: '36px', padding: '0 10px', color: 'white', fontSize: '0.85rem' }} 
-                />
-              </div>
+            {/* TAB SELECTOR */}
+            <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '20px', gap: '16px' }}>
+              <button 
+                type="button" 
+                onClick={() => setHelperTab('upload')} 
+                style={{
+                  background: 'none', border: 'none', padding: '0 0 8px 0', fontSize: '0.85rem', fontWeight: 800,
+                  color: helperTab === 'upload' ? '#fbc531' : '#64748b',
+                  borderBottom: helperTab === 'upload' ? '2px solid #fbc531' : 'none',
+                  cursor: 'pointer', transition: 'all 0.2s ease'
+                }}
+              >
+                DIRECT UPLOAD
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setHelperTab('generator')} 
+                style={{
+                  background: 'none', border: 'none', padding: '0 0 8px 0', fontSize: '0.85rem', fontWeight: 800,
+                  color: helperTab === 'generator' ? '#fbc531' : '#64748b',
+                  borderBottom: helperTab === 'generator' ? '2px solid #fbc531' : 'none',
+                  cursor: 'pointer', transition: 'all 0.2s ease'
+                }}
+              >
+                MANUAL LINKER
+              </button>
             </div>
 
-            <div style={{ marginTop: '20px', padding: '12px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.04)' }}>
-              <div style={{ fontSize: '0.6rem', fontWeight: 900, color: '#fbc531', marginBottom: '4px' }}>GENERATED DOWNLOAD LINK</div>
-              <div style={{ fontSize: '0.75rem', color: '#34d399', wordBreak: 'break-all', fontFamily: 'monospace' }}>
-                {`https://github.com/${gitUser}/${gitRepo}/releases/download/${gitTag}/${gitFile || '{filename}'}`}
+            {/* DIRECT UPLOAD VIEW */}
+            {helperTab === 'upload' && (
+              <form onSubmit={handleGitFileUpload} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '0.65rem', fontWeight: 900, color: '#64748b' }}>SELECT FILE</label>
+                  <input 
+                    type="file" 
+                    onChange={e => {
+                      const file = e.target.files[0];
+                      setSelectedFile(file);
+                      if (file) setCustomFileName(file.name);
+                    }}
+                    style={{ 
+                      background: 'rgba(255,255,255,0.02)', 
+                      border: '1px dashed rgba(255,255,255,0.12)', 
+                      borderRadius: '8px', 
+                      padding: '16px', 
+                      color: '#94a3b8', 
+                      fontSize: '0.8rem',
+                      cursor: 'pointer'
+                    }} 
+                    required
+                  />
+                </div>
+
+                {selectedFile && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '0.65rem', fontWeight: 900, color: '#64748b' }}>CUSTOM FILENAME ON GITHUB</label>
+                    <input 
+                      type="text" 
+                      value={customFileName} 
+                      onChange={e => setCustomFileName(e.target.value)} 
+                      style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', height: '36px', padding: '0 10px', color: 'white', fontSize: '0.85rem' }} 
+                    />
+                  </div>
+                )}
+
+                {uploadingStatus && (
+                  <div style={{ 
+                    padding: '12px', 
+                    borderRadius: '8px', 
+                    fontSize: '0.75rem', 
+                    fontWeight: 700,
+                    background: uploadingStatus === 'COMPLETE' ? 'rgba(16,185,129,0.1)' : uploadingStatus === 'ERROR' ? 'rgba(239,68,68,0.1)' : 'rgba(251,197,49,0.08)',
+                    border: '1px solid',
+                    borderColor: uploadingStatus === 'COMPLETE' ? 'rgba(16,185,129,0.2)' : uploadingStatus === 'ERROR' ? 'rgba(239,68,68,0.2)' : 'rgba(251,197,49,0.2)',
+                    color: uploadingStatus === 'COMPLETE' ? '#34d399' : uploadingStatus === 'ERROR' ? '#f87171' : '#fbc531'
+                  }}>
+                    {uploadingStatus === 'INITIATING' && 'Connecting to storage server...'}
+                    {uploadingStatus === 'RESOLVING_RELEASE' && 'Querying active GitHub Release...'}
+                    {uploadingStatus === 'CREATING_RELEASE' && 'Creating new asset storage release...'}
+                    {uploadingStatus === 'UPLOADING_FILE' && 'Uploading binary stream to GitHub CDN...'}
+                    {uploadingStatus === 'COMPLETE' && '✓ Upload Complete! Public CDN link generated.'}
+                    {uploadingStatus === 'ERROR' && '❌ Upload Failed. Check token permissions.'}
+                  </div>
+                )}
+
+                {!generatedUrl && (
+                  <button 
+                    type="submit" 
+                    className="btn-primary" 
+                    style={{ margin: '10px 0 0 0', height: '40px', fontSize: '0.85rem' }} 
+                    disabled={uploadingStatus === 'INITIATING' || uploadingStatus === 'RESOLVING_RELEASE' || uploadingStatus === 'UPLOADING_FILE'}
+                  >
+                    {uploadingStatus && uploadingStatus !== 'COMPLETE' && uploadingStatus !== 'ERROR' ? 'UPLOADING...' : 'UPLOAD TO GITHUB STORAGE'}
+                  </button>
+                )}
+              </form>
+            )}
+
+            {/* MANUAL LINK GENERATOR VIEW */}
+            {helperTab === 'generator' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '0.65rem', fontWeight: 900, color: '#64748b' }}>GITHUB USERNAME</label>
+                  <input 
+                    type="text" 
+                    value={gitUser} 
+                    onChange={e => setGitUser(e.target.value)} 
+                    style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', height: '36px', padding: '0 10px', color: 'white', fontSize: '0.85rem' }} 
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '0.65rem', fontWeight: 900, color: '#64748b' }}>REPOSITORY NAME</label>
+                  <input 
+                    type="text" 
+                    value={gitRepo} 
+                    onChange={e => setGitRepo(e.target.value)} 
+                    style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', height: '36px', padding: '0 10px', color: 'white', fontSize: '0.85rem' }} 
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '0.65rem', fontWeight: 900, color: '#64748b' }}>RELEASE TAG / VERSION</label>
+                  <input 
+                    type="text" 
+                    value={gitTag} 
+                    onChange={e => setGitTag(e.target.value)} 
+                    style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', height: '36px', padding: '0 10px', color: 'white', fontSize: '0.85rem' }} 
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '0.65rem', fontWeight: 900, color: '#64748b' }}>FILENAME WITH EXTENSION</label>
+                  <input 
+                    type="text" 
+                    value={gitFile} 
+                    onChange={e => {
+                      setGitFile(e.target.value);
+                      setGeneratedUrl(`https://github.com/${gitUser}/${gitRepo}/releases/download/${gitTag}/${e.target.value}`);
+                    }} 
+                    placeholder="e.g. robot-action.jpg"
+                    style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', height: '36px', padding: '0 10px', color: 'white', fontSize: '0.85rem' }} 
+                  />
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* GENERATED LINK OUTPUT */}
+            {generatedUrl && (
+              <div style={{ marginTop: '20px', padding: '12px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                <div style={{ fontSize: '0.6rem', fontWeight: 900, color: '#fbc531', marginBottom: '4px' }}>GENERATED CDN DOWNLOAD LINK</div>
+                <div style={{ fontSize: '0.75rem', color: '#34d399', wordBreak: 'break-all', fontFamily: 'monospace' }}>
+                  {generatedUrl}
+                </div>
+              </div>
+            )}
 
             <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>
-              <button 
-                onClick={() => {
-                  const url = `https://github.com/${gitUser}/${gitRepo}/releases/download/${gitTag}/${gitFile}`;
-                  navigator.clipboard.writeText(url);
-                  triggerToast('Link copied to clipboard');
-                }} 
-                disabled={!gitFile}
-                className="btn-primary" 
-                style={{ flex: 1, margin: 0, height: '38px', fontSize: '0.8rem' }}
-              >
-                COPY LINK
-              </button>
+              {generatedUrl ? (
+                <button 
+                  onClick={handleInsertLink}
+                  className="btn-primary" 
+                  style={{ flex: 1, margin: 0, height: '38px', fontSize: '0.8rem' }}
+                >
+                  INSERT INTO FORM
+                </button>
+              ) : (
+                helperTab === 'generator' && (
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(generatedUrl);
+                      triggerToast('Link copied to clipboard');
+                    }}
+                    disabled={!gitFile}
+                    className="btn-primary" 
+                    style={{ flex: 1, margin: 0, height: '38px', fontSize: '0.8rem' }}
+                  >
+                    COPY LINK
+                  </button>
+                )
+              )}
               <button 
                 onClick={() => setShowGitHelper(false)} 
                 className="btn-secondary" 
