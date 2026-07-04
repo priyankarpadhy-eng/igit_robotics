@@ -8,6 +8,7 @@ import igitCampus from "../assets/igit_campus.png";
 import * as THREE from 'three';
 import { Mail } from 'lucide-react';
 import { FaLinkedin } from 'react-icons/fa';
+import { eventsService, galleryService, membersService } from '../services/dbService';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -748,39 +749,32 @@ const TeamSection = () => {
     };
   }, []);
 
+  const [members, setMembers] = useState([]);
+
+  useEffect(() => {
+    membersService.getAll().then(setMembers);
+  }, []);
+
   const facultyData = {
-    professors: [
-      { n: 'Dr. A. K. Sharma', r: 'Faculty Advisor', c: '#ffcd6d', b: 'Dept. of CS' },
-      { n: 'Dr. B. P. Singh', r: 'Co-Advisor', c: '#95d5b2', b: 'Dept. of EE' }
-    ]
+    professors: members.filter(m => m.category === 'faculty').map(m => ({ n: m.name, r: m.role, c: m.color, b: m.batch, img: m.img }))
   };
 
+  const leadershipMembers = members.filter(m => m.category === 'leadership');
   const leadershipData = {
-    advisors: [
-      { n: 'Navdeep Ghosh', r: 'Robotics Advisor', c: '#ffcd6d', b: '41st Batch' },
-      { n: 'Debasish Mallick', r: 'Robotics Advisor', c: '#95d5b2', b: '41st Batch' },
-      { n: 'Reetika Mohanty', r: 'Robotics Advisor', c: '#0f172a', b: '41st Batch' }
-    ],
-    secretaries: [
-      { n: 'Pritish Nayak', r: 'Robotics Secretary', c: '#fdf9e1', b: '42nd Batch', img: '/pritish-kumar-nayak.png' },
-      { n: 'Prayash Agarwal', r: 'Robotics Secretary', c: '#d8e9f0', b: '42nd Batch' },
-      { n: 'Pritiparana Nayak', r: 'Robotics Secretary', c: '#ffcd6d', b: '42nd Batch', img: '/pritiparna-nayak.png' }
-    ],
-    representatives: [
-      { n: 'Satya Sworup Pradhan', r: 'Robotics Representative', c: '#95d5b2', b: '43rd Batch', img: '/satys-sworup.png' },
-      { n: 'Sushree Mohanty', r: 'Robotics Representative', c: '#0f172a', b: '43rd Batch' }
-    ]
+    advisors: leadershipMembers.filter(m => m.role?.toLowerCase().includes('advisor')).map(m => ({ n: m.name, r: m.role, c: m.color, b: m.batch, img: m.img })),
+    secretaries: leadershipMembers.filter(m => m.role?.toLowerCase().includes('secretary')).map(m => ({ n: m.name, r: m.role, c: m.color, b: m.batch, img: m.img })),
+    representatives: leadershipMembers.filter(m => m.role?.toLowerCase().includes('representative')).map(m => ({ n: m.name, r: m.role, c: m.color, b: m.batch, img: m.img }))
   };
 
-  const alumniData = {
-    alumni2020: [
-      { n: 'Rahul Verma', r: 'Software Engineer @ Google', c: '#fdf9e1', b: 'Class of 2020' },
-      { n: 'Anjali Das', r: 'Robotics Engineer @ Tesla', c: '#d8e9f0', b: 'Class of 2020' }
-    ],
-    alumni2021: [
-      { n: 'Vikas Kumar', r: 'Researcher @ ISRO', c: '#ffcd6d', b: 'Class of 2021' }
-    ]
-  };
+  // Group alumni dynamically by batch
+  const alumniData = {};
+  const alumniMembers = members.filter(m => m.category === 'alumni');
+  alumniMembers.forEach(m => {
+    const yearMatch = m.batch?.match(/\d{4}/);
+    const key = yearMatch ? `Class of ${yearMatch[0]}` : m.batch || 'Other';
+    if (!alumniData[key]) alumniData[key] = [];
+    alumniData[key].push({ n: m.name, r: m.role, c: m.color, b: m.batch, img: m.img });
+  });
 
   const tabMeta = {
     faculty: {
@@ -797,9 +791,7 @@ const TeamSection = () => {
     },
   };
 
-  const meta = tabMeta[activeTab];
-
-  const allTabs = ['faculty', 'leadership', 'alumni'];
+  const meta = tabMeta[activeTab] || tabMeta.leadership;
 
   return (
     <section
@@ -859,8 +851,14 @@ const TeamSection = () => {
           )}
           {activeTab === 'alumni' && (
             <div>
-              <MemberGroup title="Class of 2020" members={alumniData.alumni2020} themeColor={meta.theme} />
-              <MemberGroup title="Class of 2021" members={alumniData.alumni2021} themeColor={meta.theme} />
+              {Object.keys(alumniData).sort().reverse().map(batchTitle => (
+                <MemberGroup 
+                  key={batchTitle} 
+                  title={batchTitle} 
+                  members={alumniData[batchTitle]} 
+                  themeColor={meta.theme} 
+                />
+              ))}
             </div>
           )}
         </div>
@@ -954,48 +952,14 @@ const Achievements = () => {
 const Events = () => {
   // Removed GSAP animation as requested
 
-  const eventsData = [
-    { 
-      title: 'Intro to Arduino', 
-      desc: 'Hands-on hardware basics with your first circuits.',
-      dateMonth: 'SEP', dateDay: '15',
-      location: 'IGIT Campus', 
-      price: 'Starts from ₹100',
-      image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=600',
-      color: '#0f172a',
-      status: 'FINISHED'
-    },
-    { 
-      title: 'ROS Masterclass', 
-      desc: 'Advanced robotics OS training session.',
-      dateMonth: 'OCT', dateDay: '04',
-      location: 'Virtual', 
-      price: 'Free Entry',
-      image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=600',
-      color: '#0f172a',
-      status: 'LIVE'
-    },
-    { 
-      title: 'PCB Fabrication', 
-      desc: 'Learn to design and print your own boards.',
-      dateMonth: 'NOV', dateDay: '12',
-      location: 'Robotics Lab', 
-      price: 'Starts from ₹250',
-      image: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?q=80&w=600',
-      color: '#0f172a',
-      status: 'UPCOMING'
-    },
-    { 
-      title: 'AI Vision Workshop', 
-      desc: 'Computer vision and object detection.',
-      dateMonth: 'DEC', dateDay: '24',
-      location: 'IGIT Auditorium', 
-      price: 'Starts from ₹150',
-      image: 'https://images.unsplash.com/photo-1555255707-c07966088b7b?q=80&w=600',
-      color: '#0f172a',
-      status: 'UPCOMING'
-    }
-  ];
+  const [eventsData, setEventsData] = useState([]);
+
+  useEffect(() => {
+    eventsService.getAll().then(setMembers => {
+      // Just to keep the name correct, setEventsData is passed
+      setEventsData(setMembers);
+    });
+  }, []);
 
   return (
     <section id="workshops" style={{ 
@@ -1132,31 +1096,17 @@ const Gallery = () => {
   const sectionRef = useRef(null);
   const rowRefs = useRef([]);
 
+  const [galleryList, setGalleryList] = useState([]);
+
+  useEffect(() => {
+    galleryService.getAll().then(setGalleryList);
+  }, []);
+
   const galleryData = [
-    [
-      { url: 'https://images.unsplash.com/photo-1517433670267-08bbd4be890f?q=80&w=600', title: 'Robo Wars', context: 'Our combat robot in action at TechFest.' },
-      { url: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?q=80&w=600', title: 'AI Automation', context: 'Testing the vision system for our autonomous rover.' },
-      { url: 'https://images.unsplash.com/photo-1531746790731-6c087fecd65a?q=80&w=600', title: 'Team Meeting', context: 'Strategizing for the upcoming hackathon.' },
-      { url: 'https://images.unsplash.com/photo-1563207153-f40879981881?q=80&w=600', title: 'Hardware Dev', context: 'Soldering custom PCBs in the lab.' },
-    ],
-    [
-      { url: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=600', title: '3D Printing', context: 'Prototyping chassis parts overnight.' },
-      { url: 'https://images.unsplash.com/photo-1507146153580-69a1fe6d8aa1?q=80&w=600', title: 'Drone Testing', context: 'First flight test of the Quadcopter.' },
-      { url: 'https://images.unsplash.com/photo-1589254065878-42c9da997008?q=80&w=600', title: 'Coding Session', context: 'Debugging the ROS nodes.' },
-      { url: 'https://images.unsplash.com/photo-1527443154391-507e9dc6c5cc?q=80&w=600', title: 'Workshop', context: 'Teaching juniors about microcontrollers.' },
-    ],
-    [
-      { url: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?q=80&w=600', title: 'Circuit Design', context: 'Finalizing the schematics.' },
-      { url: 'https://images.unsplash.com/photo-1555255707-c07966088b7b?q=80&w=600', title: 'Machine Learning', context: 'Training models for object detection.' },
-      { url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=600', title: 'Exhibition', context: 'Showcasing our projects to the university.' },
-      { url: 'https://images.unsplash.com/photo-1495055154266-57bbdeada43e?q=80&w=600', title: 'Sensor Integration', context: 'Calibrating the LIDAR.' },
-    ],
-    [
-      { url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=600', title: 'Data Analysis', context: 'Reviewing logs from the autonomous run.' },
-      { url: 'https://images.unsplash.com/photo-1563206767-5b18f218e8de?q=80&w=600', title: 'Assembly Line', context: 'Putting together the robotic arm.' },
-      { url: 'https://images.unsplash.com/photo-1610309995543-c0d6cfdfa380?q=80&w=600', title: 'VR Setup', context: 'Teleoperating the rover in VR.' },
-      { url: 'https://images.unsplash.com/photo-1576401662998-ce8ccf149b18?q=80&w=600', title: 'Success!', context: 'Winning the regional championship.' },
-    ]
+    galleryList.filter((_, i) => i % 4 === 0),
+    galleryList.filter((_, i) => i % 4 === 1),
+    galleryList.filter((_, i) => i % 4 === 2),
+    galleryList.filter((_, i) => i % 4 === 3)
   ];
 
   useGSAP(() => {
