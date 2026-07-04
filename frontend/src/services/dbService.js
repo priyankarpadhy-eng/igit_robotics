@@ -1,4 +1,16 @@
-import { supabase } from './supabase';
+import { db } from './firebase';
+import { 
+  collection, 
+  getDocs, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  query, 
+  orderBy,
+  setDoc,
+  limit
+} from 'firebase/firestore';
 
 // System Default Data for seeding/fallback
 export const defaultEvents = [
@@ -49,6 +61,11 @@ export const defaultEvents = [
 ];
 
 export const defaultGallery = [
+  { url: 'https://images.unsplash.com/photo-1517433670267-08bbd4be890f?q=80&w=600', title: 'Robo Wars', context: 'Our combat robot in action at TechFest.' },
+  { url: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?q=80&w=600', title: 'AI Automation', context: 'Testing the vision system for our autonomous rover.' },
+  { url: 'https://images.unsplash.com/photo-1531746790731-6c087fecd65a?q=80&w=600', title: 'Team Meeting', context: 'Strategizing for the upcoming hackathon.' },
+  { url: 'https://images.unsplash.com/photo-1563207153-f40879981881?q=80&w=600', title: 'Hardware Dev', context: 'Soldering custom PCBs in the lab.' },
+  { url: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=600', title: '3D Printing', context: 'Prototyping chassis parts overnight.' },
   { url: 'https://images.unsplash.com/photo-1507146153580-69a1fe6d8aa1?q=80&w=600', title: 'Drone Testing', context: 'First flight test of the Quadcopter.' },
   { url: 'https://images.unsplash.com/photo-1589254065878-42c9da997008?q=80&w=600', title: 'Coding Session', context: 'Debugging the ROS nodes.' },
   { url: 'https://images.unsplash.com/photo-1527443154391-507e9dc6c5cc?q=80&w=600', title: 'Workshop', context: 'Teaching juniors about microcontrollers.' },
@@ -67,12 +84,12 @@ export const defaultMembers = [
   { name: 'Dr. B. P. Singh', role: 'Co-Advisor', color: '#95d5b2', batch: 'Dept. of EE', category: 'faculty' },
   { name: 'Navdeep Ghosh', role: 'Robotics Advisor', color: '#ffcd6d', batch: '41st Batch', category: 'leadership' },
   { name: 'Debasish Mallick', role: 'Robotics Advisor', color: '#95d5b2', batch: '41st Batch', category: 'leadership' },
-  { name: 'Reetika Mohanty', role: 'Robotics Advisor', color: '#e5d0f1', batch: '41st Batch', category: 'leadership' },
+  { name: 'Reetika Mohanty', role: 'Robotics Advisor', color: '#0f172a', batch: '41st Batch', category: 'leadership' },
   { name: 'Pritish Nayak', role: 'Robotics Secretary', color: '#fdf9e1', batch: '42nd Batch', img: '/pritish-kumar-nayak.png', category: 'leadership' },
   { name: 'Prayash Agarwal', role: 'Robotics Secretary', color: '#d8e9f0', batch: '42nd Batch', category: 'leadership' },
   { name: 'Pritiparana Nayak', role: 'Robotics Secretary', color: '#ffcd6d', batch: '42nd Batch', img: '/pritiparna-nayak.png', category: 'leadership' },
   { name: 'Satya Sworup Pradhan', role: 'Robotics Representative', color: '#95d5b2', batch: '43rd Batch', img: '/satys-sworup.png', category: 'leadership' },
-  { name: 'Sushree Mohanty', role: 'Robotics Representative', color: '#e5d0f1', batch: '43rd Batch', category: 'leadership' },
+  { name: 'Sushree Mohanty', role: 'Robotics Representative', color: '#0f172a', batch: '43rd Batch', category: 'leadership' },
   { name: 'Rahul Verma', role: 'Software Engineer @ Google', color: '#fdf9e1', batch: 'Class of 2020', category: 'alumni' },
   { name: 'Anjali Das', role: 'Robotics Engineer @ Tesla', color: '#d8e9f0', batch: 'Class of 2020', category: 'alumni' },
   { name: 'Vikas Kumar', role: 'Researcher @ ISRO', color: '#ffcd6d', batch: 'Class of 2021', category: 'alumni' }
@@ -80,20 +97,20 @@ export const defaultMembers = [
 
 // Helper to check table connectivity
 export async function getDbHealth() {
-  const health = { supabaseConnected: false, tablesFound: { events: false, gallery: false, members: false } };
+  const health = { firebaseConnected: false, collectionsFound: { events: false, gallery: false, members: false } };
   try {
-    const { error: eErr } = await supabase.from('events').select('count').limit(1);
-    if (!eErr) health.tablesFound.events = true;
-    
-    const { error: gErr } = await supabase.from('gallery').select('count').limit(1);
-    if (!gErr) health.tablesFound.gallery = true;
+    const eSnap = await getDocs(query(collection(db, 'events'), limit(1)));
+    health.collectionsFound.events = true;
 
-    const { error: mErr } = await supabase.from('members').select('count').limit(1);
-    if (!mErr) health.tablesFound.members = true;
+    const gSnap = await getDocs(query(collection(db, 'gallery'), limit(1)));
+    health.collectionsFound.gallery = true;
 
-    health.supabaseConnected = true;
+    const mSnap = await getDocs(query(collection(db, 'members'), limit(1)));
+    health.collectionsFound.members = true;
+
+    health.firebaseConnected = true;
   } catch (e) {
-    console.warn('Supabase health check failed, falling back to LocalStorage', e);
+    console.warn('Firestore health check failed, falling back to LocalStorage', e);
   }
   return health;
 }
@@ -116,19 +133,14 @@ const setLocal = (key, val) => {
 export const eventsService = {
   getAll: async () => {
     try {
-      const { data, error } = await supabase.from('events').select('*').order('created_at', { ascending: false });
-      if (error || !data) throw error || new Error('No data');
-      return data.map(item => ({
-        id: item.id,
-        title: item.title,
-        desc: item.description,
-        dateMonth: item.date_month || 'TBD',
-        dateDay: item.date_day || '00',
-        location: item.location || 'Unknown',
-        price: item.price || 'Free',
-        image: item.banner_url || 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=600',
-        color: item.color || '#0f172a',
-        status: item.status || 'UPCOMING'
+      const q = query(collection(db, 'events'), orderBy('created_at', 'desc'));
+      const snap = await getDocs(q);
+      if (snap.empty) {
+        return getLocal('robotics_events', defaultEvents);
+      }
+      return snap.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
       }));
     } catch (e) {
       console.warn('Falling back to LocalStorage for Events:', e.message);
@@ -137,19 +149,20 @@ export const eventsService = {
   },
   create: async (event) => {
     try {
-      const { data, error } = await supabase.from('events').insert([{
+      const payload = {
         title: event.title,
-        description: event.desc,
-        date_month: event.dateMonth,
-        date_day: event.dateDay,
+        desc: event.desc,
+        dateMonth: event.dateMonth,
+        dateDay: event.dateDay,
         location: event.location,
         price: event.price,
-        banner_url: event.image,
+        image: event.image,
         color: event.color || '#0f172a',
-        status: event.status || 'UPCOMING'
-      }]).select();
-      if (error) throw error;
-      return data[0];
+        status: event.status || 'UPCOMING',
+        created_at: new Date().toISOString()
+      };
+      const docRef = await addDoc(collection(db, 'events'), payload);
+      return { id: docRef.id, ...payload };
     } catch (e) {
       console.warn('Falling back to LocalStorage for Event creation');
       const list = getLocal('robotics_events', defaultEvents);
@@ -161,19 +174,20 @@ export const eventsService = {
   },
   update: async (id, event) => {
     try {
-      const { data, error } = await supabase.from('events').update({
+      const ref = doc(db, 'events', id);
+      const payload = {
         title: event.title,
-        description: event.desc,
-        date_month: event.dateMonth,
-        date_day: event.dateDay,
+        desc: event.desc,
+        dateMonth: event.dateMonth,
+        dateDay: event.dateDay,
         location: event.location,
         price: event.price,
-        banner_url: event.image,
+        image: event.image,
         color: event.color,
         status: event.status
-      }).eq('id', id).select();
-      if (error) throw error;
-      return data[0];
+      };
+      await updateDoc(ref, payload);
+      return { id, ...payload };
     } catch (e) {
       console.warn('Falling back to LocalStorage for Event update');
       const list = getLocal('robotics_events', defaultEvents);
@@ -187,8 +201,7 @@ export const eventsService = {
   },
   delete: async (id, title) => {
     try {
-      const { error } = await supabase.from('events').delete().eq('id', id);
-      if (error) throw error;
+      await deleteDoc(doc(db, 'events', id));
     } catch (e) {
       console.warn('Falling back to LocalStorage for Event deletion');
       const list = getLocal('robotics_events', defaultEvents);
@@ -202,13 +215,14 @@ export const eventsService = {
 export const galleryService = {
   getAll: async () => {
     try {
-      const { data, error } = await supabase.from('gallery').select('*').order('uploaded_at', { ascending: false });
-      if (error || !data) throw error || new Error('No data');
-      return data.map(item => ({
-        id: item.id,
-        url: item.url,
-        title: item.caption || 'Gallery Image',
-        context: item.category || 'General'
+      const q = query(collection(db, 'gallery'), orderBy('uploaded_at', 'desc'));
+      const snap = await getDocs(q);
+      if (snap.empty) {
+        return getLocal('robotics_gallery', defaultGallery);
+      }
+      return snap.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
       }));
     } catch (e) {
       console.warn('Falling back to LocalStorage for Gallery:', e.message);
@@ -217,13 +231,14 @@ export const galleryService = {
   },
   create: async (item) => {
     try {
-      const { data, error } = await supabase.from('gallery').insert([{
+      const payload = {
         url: item.url,
-        caption: item.title,
-        category: item.context
-      }]).select();
-      if (error) throw error;
-      return data[0];
+        title: item.title,
+        context: item.context,
+        uploaded_at: new Date().toISOString()
+      };
+      const docRef = await addDoc(collection(db, 'gallery'), payload);
+      return { id: docRef.id, ...payload };
     } catch (e) {
       console.warn('Falling back to LocalStorage for Gallery creation');
       const list = getLocal('robotics_gallery', defaultGallery);
@@ -235,8 +250,7 @@ export const galleryService = {
   },
   delete: async (id, url) => {
     try {
-      const { error } = await supabase.from('gallery').delete().eq('id', id);
-      if (error) throw error;
+      await deleteDoc(doc(db, 'gallery', id));
     } catch (e) {
       console.warn('Falling back to LocalStorage for Gallery deletion');
       const list = getLocal('robotics_gallery', defaultGallery);
@@ -250,16 +264,13 @@ export const galleryService = {
 export const membersService = {
   getAll: async () => {
     try {
-      const { data, error } = await supabase.from('members').select('*');
-      if (error || !data) throw error || new Error('No data');
-      return data.map(item => ({
-        id: item.id,
-        name: item.name,
-        role: item.role,
-        color: item.color || '#ffcd6d',
-        batch: item.bio || 'Class of ' + new Date().getFullYear(),
-        img: item.avatar_url || '',
-        category: item.initials || 'student'
+      const snap = await getDocs(collection(db, 'members'));
+      if (snap.empty) {
+        return getLocal('robotics_members', defaultMembers);
+      }
+      return snap.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
       }));
     } catch (e) {
       console.warn('Falling back to LocalStorage for Members:', e.message);
@@ -268,16 +279,17 @@ export const membersService = {
   },
   create: async (member) => {
     try {
-      const { data, error } = await supabase.from('members').insert([{
+      const payload = {
         name: member.name,
         role: member.role,
         color: member.color || '#ffcd6d',
-        bio: member.batch,
-        avatar_url: member.img || '',
-        initials: member.category || 'student'
-      }]).select();
-      if (error) throw error;
-      return data[0];
+        batch: member.batch,
+        img: member.img || '',
+        category: member.category || 'leadership',
+        joined_at: new Date().toISOString()
+      };
+      const docRef = await addDoc(collection(db, 'members'), payload);
+      return { id: docRef.id, ...payload };
     } catch (e) {
       console.warn('Falling back to LocalStorage for Member creation');
       const list = getLocal('robotics_members', defaultMembers);
@@ -289,16 +301,17 @@ export const membersService = {
   },
   update: async (id, member) => {
     try {
-      const { data, error } = await supabase.from('members').update({
+      const ref = doc(db, 'members', id);
+      const payload = {
         name: member.name,
         role: member.role,
         color: member.color,
-        bio: member.batch,
-        avatar_url: member.img,
-        initials: member.category
-      }).eq('id', id).select();
-      if (error) throw error;
-      return data[0];
+        batch: member.batch,
+        img: member.img,
+        category: member.category
+      };
+      await updateDoc(ref, payload);
+      return { id, ...payload };
     } catch (e) {
       console.warn('Falling back to LocalStorage for Member update');
       const list = getLocal('robotics_members', defaultMembers);
@@ -312,8 +325,7 @@ export const membersService = {
   },
   delete: async (id, name) => {
     try {
-      const { error } = await supabase.from('members').delete().eq('id', id);
-      if (error) throw error;
+      await deleteDoc(doc(db, 'members', id));
     } catch (e) {
       console.warn('Falling back to LocalStorage for Member deletion');
       const list = getLocal('robotics_members', defaultMembers);
@@ -330,38 +342,41 @@ export const seedDatabase = {
     localStorage.setItem('robotics_gallery', JSON.stringify(defaultGallery));
     localStorage.setItem('robotics_members', JSON.stringify(defaultMembers));
   },
-  syncToSupabase: async () => {
+  syncToFirestore: async () => {
     // Seed events
     for (const item of defaultEvents) {
-      await supabase.from('events').insert({
+      await addDoc(collection(db, 'events'), {
         title: item.title,
-        description: item.desc,
-        date_month: item.dateMonth,
-        date_day: item.dateDay,
+        desc: item.desc,
+        dateMonth: item.dateMonth,
+        dateDay: item.dateDay,
         location: item.location,
         price: item.price,
-        banner_url: item.image,
+        image: item.image,
         color: item.color,
-        status: item.status
+        status: item.status,
+        created_at: new Date().toISOString()
       });
     }
     // Seed gallery
     for (const item of defaultGallery) {
-      await supabase.from('gallery').insert({
+      await addDoc(collection(db, 'gallery'), {
         url: item.url,
-        caption: item.title,
-        category: item.context
+        title: item.title,
+        context: item.context,
+        uploaded_at: new Date().toISOString()
       });
     }
     // Seed members
     for (const item of defaultMembers) {
-      await supabase.from('members').insert({
+      await addDoc(collection(db, 'members'), {
         name: item.name,
         role: item.role,
         color: item.color,
-        bio: item.batch,
-        avatar_url: item.img || '',
-        initials: item.category
+        batch: item.batch,
+        img: item.img || '',
+        category: item.category,
+        joined_at: new Date().toISOString()
       });
     }
   }

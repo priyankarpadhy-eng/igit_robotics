@@ -1,6 +1,7 @@
 // FILE: frontend/src/hooks/useRole.js
 import { useEffect, useState } from 'react';
-import { supabase } from '../services/supabase';
+import { db } from '../services/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { useAuth } from './useAuth';
 
 export const useRole = () => {
@@ -15,10 +16,15 @@ export const useRole = () => {
       return; 
     }
     
-    supabase.from('profiles').select('role').eq('id', user.uid).single()
-      .then(({ data }) => { 
-        setRole(data?.role ?? 'viewer'); 
-        setLoading(false); 
+    const docRef = doc(db, 'profiles', user.uid);
+    getDoc(docRef)
+      .then((docSnap) => {
+        if (docSnap.exists()) {
+          setRole(docSnap.data().role ?? 'viewer');
+        } else {
+          setRole('viewer');
+        }
+        setLoading(false);
       })
       .catch(() => {
         setRole('viewer');

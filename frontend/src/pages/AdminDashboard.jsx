@@ -20,7 +20,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('events');
 
   // DB connection health state
-  const [dbHealth, setDbHealth] = useState({ supabaseConnected: false, tablesFound: { events: false, gallery: false, members: false } });
+  const [dbHealth, setDbHealth] = useState({ firebaseConnected: false, collectionsFound: { events: false, gallery: false, members: false } });
 
   // Data states
   const [events, setEvents] = useState([]);
@@ -180,15 +180,15 @@ export default function AdminDashboard() {
     loadAllData();
   };
 
-  const handleSyncToSupabase = async () => {
-    if (!window.confirm('Sync default templates directly to Supabase? Make sure tables exist.')) return;
+  const handleSyncToFirestore = async () => {
+    if (!window.confirm('Sync default templates directly to Firestore? Make sure database has appropriate permissions.')) return;
     setLoading(true);
     try {
-      await seedDatabase.syncToSupabase();
-      triggerToast('Supabase seeded successfully');
+      await seedDatabase.syncToFirestore();
+      triggerToast('Firestore collections seeded successfully');
       loadAllData();
     } catch (err) {
-      triggerToast('Failed to sync to Supabase (check schema)', 'error');
+      triggerToast('Failed to sync to Firestore (check rules)', 'error');
     } finally {
       setLoading(false);
     }
@@ -238,8 +238,8 @@ export default function AdminDashboard() {
           <div className="connection-card">
             <div className="card-label">DATABASE SYNC STATUS</div>
             <div className="indicator-row">
-              <span className={`status-dot ${dbHealth.supabaseConnected ? 'online' : 'offline'}`} />
-              <span className="status-label">{dbHealth.supabaseConnected ? 'Supabase Live' : 'LocalStorage Mode'}</span>
+              <span className={`status-dot ${dbHealth.firebaseConnected ? 'online' : 'offline'}`} />
+              <span className="status-label">{dbHealth.firebaseConnected ? 'Firestore Live' : 'LocalStorage Mode'}</span>
             </div>
           </div>
         </aside>
@@ -572,37 +572,36 @@ export default function AdminDashboard() {
             <div className="workspace-tab text-left">
               <h2 className="section-title">DATABASE MANAGEMENT & SEED TOOLS</h2>
               <p className="description-text">
-                The IGIT Robotics web portal runs on a dual-layer database architecture. By default, it syncs with a Supabase cloud database. If tables are not detected, it falls back to LocalStorage so you can still add, edit, and delete contents dynamically with zero downtime.
+                The IGIT Robotics web portal runs on a dual-layer database architecture. By default, it syncs with a Firebase Firestore database. If connection fails or collections are missing, it falls back to LocalStorage so you can still add, edit, and delete contents dynamically with zero downtime.
               </p>
 
               <div className="db-health-grid">
                 <div className="health-card">
-                  <h4>SUPABASE CONNECTION</h4>
+                  <h4>FIRESTORE CONNECTION</h4>
                   <div className="health-status">
-                    <span className={`status-dot ${dbHealth.supabaseConnected ? 'online' : 'offline'}`} />
-                    <span>{dbHealth.supabaseConnected ? 'CONNECTED' : 'DISCONNECTED / OFFLINE'}</span>
+                    <span className={`status-dot ${dbHealth.firebaseConnected ? 'online' : 'offline'}`} />
+                    <span>{dbHealth.firebaseConnected ? 'CONNECTED' : 'DISCONNECTED / OFFLINE'}</span>
                   </div>
                 </div>
                 <div className="health-card">
-                  <h4>DETECTED DB TABLES</h4>
+                  <h4>DETECTED COLLECTIONS</h4>
                   <ul className="table-list">
-                    <li>events: <span className={dbHealth.tablesFound.events ? 'text-success' : 'text-danger'}>{dbHealth.tablesFound.events ? 'FOUND' : 'MISSING'}</span></li>
-                    <li>gallery: <span className={dbHealth.tablesFound.gallery ? 'text-success' : 'text-danger'}>{dbHealth.tablesFound.gallery ? 'FOUND' : 'MISSING'}</span></li>
-                    <li>members: <span className={dbHealth.tablesFound.members ? 'text-success' : 'text-danger'}>{dbHealth.tablesFound.members ? 'FOUND' : 'MISSING'}</span></li>
+                    <li>events: <span className={dbHealth.collectionsFound.events ? 'text-success' : 'text-danger'}>{dbHealth.collectionsFound.events ? 'FOUND' : 'MISSING'}</span></li>
+                    <li>gallery: <span className={dbHealth.collectionsFound.gallery ? 'text-success' : 'text-danger'}>{dbHealth.collectionsFound.gallery ? 'FOUND' : 'MISSING'}</span></li>
+                    <li>members: <span className={dbHealth.collectionsFound.members ? 'text-success' : 'text-danger'}>{dbHealth.collectionsFound.members ? 'FOUND' : 'MISSING'}</span></li>
                   </ul>
                 </div>
               </div>
 
-              {!dbHealth.supabaseConnected || !dbHealth.tablesFound.events ? (
+              {!dbHealth.firebaseConnected ? (
                 <div className="sql-instruction-box">
-                  <h4>⚠️ SCHEMA ACTION REQUIRED</h4>
-                  <p>To connect the web-portal fully with Supabase, run the schema file in your Supabase SQL editor. The schema query is located in the root of your project folder at:</p>
-                  <code className="filepath">/supabase_schema.sql</code>
+                  <h4>⚠️ DATABASE ACTION REQUIRED</h4>
+                  <p>To connect the web-portal fully with Firestore, make sure your Firestore database is initialized in your Firebase Console and the security rules allow reads/writes.</p>
                 </div>
               ) : (
                 <div className="sql-instruction-box success">
                   <h4>✅ DYNAMIC CONNECTION ACTIVE</h4>
-                  <p>All updates you make on this dashboard will be pushed instantly to your Supabase tables and reflect live on the website.</p>
+                  <p>All updates you make on this dashboard will be pushed instantly to your Firestore collections and reflect live on the website.</p>
                 </div>
               )}
 
@@ -616,10 +615,10 @@ export default function AdminDashboard() {
                   </div>
                   
                   <div className="utility-btn-card">
-                    <h5>Sync Templates to Supabase</h5>
-                    <p>Loads all default members, events, and gallery items directly into your Supabase database. Only use this once tables are verified.</p>
-                    <button onClick={handleSyncToSupabase} className="btn-utility primary" disabled={!dbHealth.supabaseConnected}>
-                      SEED SUPABASE TABLES
+                    <h5>Sync Templates to Firestore</h5>
+                    <p>Loads all default members, events, and gallery items directly into your Firestore database. Only use this once connectivity is verified.</p>
+                    <button onClick={handleSyncToFirestore} className="btn-utility primary" disabled={!dbHealth.firebaseConnected}>
+                      SEED FIRESTORE COLLECTIONS
                     </button>
                   </div>
                 </div>

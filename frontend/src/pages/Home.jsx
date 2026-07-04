@@ -1057,10 +1057,20 @@ const Events = () => {
 
 
 const GalleryRow = React.forwardRef(({ rowData, onImageClick }, ref) => {
-  const duplicatedData = [...rowData, ...rowData];
+  const repeatToLength = (arr, minLength = 12) => {
+    if (!arr || arr.length === 0) return [];
+    let result = [...arr];
+    while (result.length < minLength) {
+      result = [...result, ...arr];
+    }
+    return result;
+  };
+
+  const longSet = repeatToLength(rowData, 12);
+  const duplicatedData = [...longSet, ...longSet];
 
   return (
-    <div style={{ display: 'flex', width: 'fit-content', gap: '1rem', marginBottom: '1rem' }} ref={ref}>
+    <div style={{ display: 'flex', width: 'max-content', gap: '1rem', marginBottom: '1rem' }} ref={ref}>
       {duplicatedData.map((item, i) => (
         <div
           key={i}
