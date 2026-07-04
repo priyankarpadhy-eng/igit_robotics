@@ -8,7 +8,7 @@ import igitCampus from "../assets/igit_campus.png";
 import * as THREE from 'three';
 import { Mail } from 'lucide-react';
 import { FaLinkedin } from 'react-icons/fa';
-import { eventsService, galleryService, membersService } from '../services/dbService';
+import { eventsService, galleryService, membersService, defaultEvents, defaultGallery, defaultMembers } from '../services/dbService';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -749,7 +749,7 @@ const TeamSection = () => {
     };
   }, []);
 
-  const [members, setMembers] = useState([]);
+  const [members, setMembers] = useState(defaultMembers);
 
   useEffect(() => {
     membersService.getAll().then(setMembers);
@@ -948,12 +948,11 @@ const Achievements = () => {
 const Events = () => {
   // Removed GSAP animation as requested
 
-  const [eventsData, setEventsData] = useState([]);
+  const [eventsData, setEventsData] = useState(defaultEvents);
 
   useEffect(() => {
-    eventsService.getAll().then(setMembers => {
-      // Just to keep the name correct, setEventsData is passed
-      setEventsData(setMembers);
+    eventsService.getAll().then(data => {
+      setEventsData(data);
     });
   }, []);
 
@@ -1092,7 +1091,7 @@ const Gallery = () => {
   const sectionRef = useRef(null);
   const rowRefs = useRef([]);
 
-  const [galleryList, setGalleryList] = useState([]);
+  const [galleryList, setGalleryList] = useState(defaultGallery);
 
   useEffect(() => {
     galleryService.getAll().then(setGalleryList);
