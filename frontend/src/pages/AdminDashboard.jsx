@@ -38,6 +38,12 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ type: '', text: '' });
 
+  const [showGitHelper, setShowGitHelper] = useState(false);
+  const [gitUser, setGitUser] = useState('priyankarpadhy-eng');
+  const [gitRepo, setGitRepo] = useState('igit_robotics');
+  const [gitTag, setGitTag] = useState('v1.0.0');
+  const [gitFile, setGitFile] = useState('');
+
   const triggerToast = (text, type = 'success') => {
     setToast({ text, type });
     setTimeout(() => setToast({ text: '', type: '' }), 3000);
@@ -323,7 +329,12 @@ export default function AdminDashboard() {
                     </div>
 
                     <div className="form-group">
-                      <label>IMAGE URL</label>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                        <label style={{ margin: 0 }}>IMAGE URL</label>
+                        <button type="button" onClick={() => setShowGitHelper(true)} style={{ background: 'none', border: 'none', color: '#fbc531', fontSize: '0.65rem', fontWeight: 900, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
+                          GitHub Asset Linker?
+                        </button>
+                      </div>
                       <input 
                         type="url" 
                         value={eventForm.image} 
@@ -403,7 +414,12 @@ export default function AdminDashboard() {
                   <h2 className="section-title">ADD IMAGE TO GALLERY</h2>
                   <form onSubmit={handleGallerySubmit} className="admin-form">
                     <div className="form-group">
-                      <label>IMAGE URL</label>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                        <label style={{ margin: 0 }}>IMAGE URL</label>
+                        <button type="button" onClick={() => setShowGitHelper(true)} style={{ background: 'none', border: 'none', color: '#fbc531', fontSize: '0.65rem', fontWeight: 900, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
+                          GitHub Asset Linker?
+                        </button>
+                      </div>
                       <input 
                         type="url" 
                         value={galleryForm.url} 
@@ -494,7 +510,12 @@ export default function AdminDashboard() {
                       />
                     </div>
                     <div className="form-group">
-                      <label>IMAGE FILENAME / PATH</label>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                        <label style={{ margin: 0 }}>IMAGE FILENAME / PATH</label>
+                        <button type="button" onClick={() => setShowGitHelper(true)} style={{ background: 'none', border: 'none', color: '#fbc531', fontSize: '0.65rem', fontWeight: 900, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
+                          GitHub Asset Linker?
+                        </button>
+                      </div>
                       <input 
                         type="text" 
                         value={memberForm.img} 
@@ -626,7 +647,113 @@ export default function AdminDashboard() {
             </div>
           )}
         </main>
-      </div>
+
+      {/* GitHub Asset Helper Modal */}
+      {showGitHelper && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.85)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          padding: '20px'
+        }}>
+          <div style={{
+            background: '#090d18',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: '16px',
+            maxWidth: '500px',
+            width: '100%',
+            padding: '28px',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.5)',
+            boxSizing: 'border-box',
+            textAlign: 'left'
+          }}>
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '1.4rem', fontWeight: 800, color: 'white' }}>GitHub Asset Linker</h3>
+            <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 20px 0', lineHeight: 1.5 }}>
+              Use GitHub Releases as a free, lightning-fast host for your images, videos, and documents. Upload the asset on GitHub, then generate the clean link below:
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.65rem', fontWeight: 900, color: '#64748b' }}>GITHUB USERNAME</label>
+                <input 
+                  type="text" 
+                  value={gitUser} 
+                  onChange={e => setGitUser(e.target.value)} 
+                  style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', height: '36px', padding: '0 10px', color: 'white', fontSize: '0.85rem' }} 
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.65rem', fontWeight: 900, color: '#64748b' }}>REPOSITORY NAME</label>
+                <input 
+                  type="text" 
+                  value={gitRepo} 
+                  onChange={e => setGitRepo(e.target.value)} 
+                  style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', height: '36px', padding: '0 10px', color: 'white', fontSize: '0.85rem' }} 
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.65rem', fontWeight: 900, color: '#64748b' }}>RELEASE TAG / VERSION</label>
+                <input 
+                  type="text" 
+                  value={gitTag} 
+                  onChange={e => setGitTag(e.target.value)} 
+                  style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', height: '36px', padding: '0 10px', color: 'white', fontSize: '0.85rem' }} 
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.65rem', fontWeight: 900, color: '#64748b' }}>FILENAME WITH EXTENSION</label>
+                <input 
+                  type="text" 
+                  value={gitFile} 
+                  onChange={e => setGitFile(e.target.value)} 
+                  placeholder="e.g. robot-action.jpg"
+                  style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', height: '36px', padding: '0 10px', color: 'white', fontSize: '0.85rem' }} 
+                />
+              </div>
+            </div>
+
+            <div style={{ marginTop: '20px', padding: '12px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.04)' }}>
+              <div style={{ fontSize: '0.6rem', fontWeight: 900, color: '#fbc531', marginBottom: '4px' }}>GENERATED DOWNLOAD LINK</div>
+              <div style={{ fontSize: '0.75rem', color: '#34d399', wordBreak: 'break-all', fontFamily: 'monospace' }}>
+                {`https://github.com/${gitUser}/${gitRepo}/releases/download/${gitTag}/${gitFile || '{filename}'}`}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>
+              <button 
+                onClick={() => {
+                  const url = `https://github.com/${gitUser}/${gitRepo}/releases/download/${gitTag}/${gitFile}`;
+                  navigator.clipboard.writeText(url);
+                  triggerToast('Link copied to clipboard');
+                }} 
+                disabled={!gitFile}
+                className="btn-primary" 
+                style={{ flex: 1, margin: 0, height: '38px', fontSize: '0.8rem' }}
+              >
+                COPY LINK
+              </button>
+              <button 
+                onClick={() => setShowGitHelper(false)} 
+                className="btn-secondary" 
+                style={{ flex: 1, height: '38px', fontSize: '0.8rem' }}
+              >
+                CLOSE
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
 
       <style>{`
         .admin-root {
