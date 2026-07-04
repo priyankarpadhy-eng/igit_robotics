@@ -628,7 +628,7 @@ export default function AdminDashboard() {
         </main>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .admin-root {
           min-height: 100vh;
           background: #070a13;
