@@ -62,6 +62,47 @@ export default function AdminDashboard() {
     setTimeout(() => setToast({ text: '', type: '' }), 3000);
   };
 
+  const toBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = error => reject(error);
+  });
+
+  const uploadToGithubContents = async (file, filename) => {
+    const token = import.meta.env.VITE_GITHUB_TOKEN;
+    const owner = import.meta.env.VITE_GITHUB_OWNER || 'priyankarpadhy-eng';
+    const repo = import.meta.env.VITE_GITHUB_REPO || 'igit_robotics_storage';
+    
+    if (!token) {
+      throw new Error('GitHub token configuration is missing');
+    }
+
+    const base64Content = await toBase64(file);
+    const cleanFilename = `${Date.now()}-${filename.replace(/\s+/g, '-')}`;
+    const url = `https://api.github.com/repos/${owner}/${repo}/contents/assets/${cleanFilename}`;
+
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        Authorization: `token ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message: `Upload asset ${cleanFilename}`,
+        content: base64Content
+      })
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || 'GitHub upload failed');
+    }
+
+    const data = await res.json();
+    return data.content.download_url;
+  };
+
   const handleGitFileUpload = async (e) => {
     e.preventDefault();
     if (!selectedFile) {
@@ -69,73 +110,14 @@ export default function AdminDashboard() {
       return;
     }
 
-    const token = import.meta.env.VITE_GITHUB_TOKEN;
-    const owner = import.meta.env.VITE_GITHUB_OWNER || 'priyankarpadhy-eng';
-    const repo = import.meta.env.VITE_GITHUB_REPO || 'igit_robotics_storage';
-    
-    if (!token) {
-      triggerToast('GitHub token configuration is missing', 'error');
-      return;
-    }
-
     setUploadingStatus('INITIATING');
     try {
-      setUploadingStatus('RESOLVING_RELEASE');
-      const tagUrl = `https://api.github.com/repos/${owner}/${repo}/releases/tags/robo`;
-      const tagRes = await fetch(tagUrl, {
-        headers: { Authorization: `token ${token}` }
-      });
-
-      let release;
-      if (tagRes.status === 404) {
-        setUploadingStatus('CREATING_RELEASE');
-        const createRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`, {
-          method: 'POST',
-          headers: {
-            Authorization: `token ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            tag_name: 'robo',
-            name: 'Robo Assets Store',
-            body: 'Automated file storage for IGIT Robotics web portal.',
-            draft: false,
-            prerelease: false
-          })
-         });
-         if (!createRes.ok) throw new Error('Failed to create release');
-         release = await createRes.json();
-      } else {
-        if (!tagRes.ok) throw new Error('Failed to retrieve release');
-        release = await tagRes.json();
-      }
-
       setUploadingStatus('UPLOADING_FILE');
       const filename = customFileName || selectedFile.name;
-      const rawUploadUrl = release.upload_url.split('{')[0];
-      const uploadUrl = `${rawUploadUrl}?name=${encodeURIComponent(filename)}`;
-
-      const uploadRes = await fetch(uploadUrl, {
-        method: 'POST',
-        headers: {
-          Authorization: `token ${token}`,
-          'Content-Type': selectedFile.type || 'application/octet-stream'
-        },
-        body: selectedFile
-      });
-
-      if (uploadRes.status === 422) {
-        throw new Error('A file with this name already exists. Please use a unique filename.');
-      }
-      if (!uploadRes.ok) {
-        const errorData = await uploadRes.json().catch(() => ({}));
-        throw new Error(errorData.message || 'File upload rejected by GitHub');
-      }
-
-      const assetData = await uploadRes.json();
-      setGeneratedUrl(assetData.browser_download_url);
+      const downloadUrl = await uploadToGithubContents(selectedFile, filename);
+      setGeneratedUrl(downloadUrl);
       setUploadingStatus('COMPLETE');
-      triggerToast('Asset uploaded successfully to GitHub Release');
+      triggerToast('Asset uploaded successfully to GitHub Storage');
     } catch (err) {
       console.error(err);
       setUploadingStatus('ERROR');
@@ -157,65 +139,10 @@ export default function AdminDashboard() {
 
   const handleInlineUpload = async (file, targetField) => {
     if (!file) return;
-    
-    const token = import.meta.env.VITE_GITHUB_TOKEN;
-    const owner = import.meta.env.VITE_GITHUB_OWNER || 'priyankarpadhy-eng';
-    const repo = import.meta.env.VITE_GITHUB_REPO || 'igit_robotics_storage';
-
-    if (!token) {
-      triggerToast('GitHub token configuration is missing', 'error');
-      return;
-    }
 
     setInlineUploading(prev => ({ ...prev, [targetField]: true }));
     try {
-      const tagUrl = `https://api.github.com/repos/${owner}/${repo}/releases/tags/robo`;
-      const tagRes = await fetch(tagUrl, {
-        headers: { Authorization: `token ${token}` }
-      });
-
-      let release;
-      if (tagRes.status === 404) {
-        const createRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`, {
-          method: 'POST',
-          headers: {
-            Authorization: `token ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            tag_name: 'robo',
-            name: 'Robo Assets Store',
-            body: 'Automated file storage for IGIT Robotics web portal.',
-            draft: false,
-            prerelease: false
-          })
-         });
-         if (!createRes.ok) throw new Error('Failed to create storage release tag');
-         release = await createRes.json();
-      } else {
-        if (!tagRes.ok) throw new Error('Failed to retrieve release');
-        release = await tagRes.json();
-      }
-
-      const filename = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
-      const rawUploadUrl = release.upload_url.split('{')[0];
-      const uploadUrl = `${rawUploadUrl}?name=${encodeURIComponent(filename)}`;
-
-      const uploadRes = await fetch(uploadUrl, {
-        method: 'POST',
-        headers: {
-          Authorization: `token ${token}`,
-          'Content-Type': file.type || 'application/octet-stream'
-        },
-        body: file
-      });
-
-      if (!uploadRes.ok) {
-        throw new Error('Upload rejected by GitHub storage');
-      }
-
-      const assetData = await uploadRes.json();
-      const downloadUrl = assetData.browser_download_url;
+      const downloadUrl = await uploadToGithubContents(file, file.name);
 
       if (targetField === 'events') {
         setEventForm(prev => ({ ...prev, image: downloadUrl }));
@@ -238,70 +165,14 @@ export default function AdminDashboard() {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
-    const token = import.meta.env.VITE_GITHUB_TOKEN;
-    const owner = import.meta.env.VITE_GITHUB_OWNER || 'priyankarpadhy-eng';
-    const repo = import.meta.env.VITE_GITHUB_REPO || 'igit_robotics_storage';
-
-    if (!token) {
-      triggerToast('GitHub token configuration is missing', 'error');
-      return;
-    }
-
     setBulkUploading(true);
     setBulkStatus(`Initiating upload for ${files.length} images...`);
     try {
-      const tagUrl = `https://api.github.com/repos/${owner}/${repo}/releases/tags/robo`;
-      const tagRes = await fetch(tagUrl, {
-        headers: { Authorization: `token ${token}` }
-      });
-
-      let release;
-      if (tagRes.status === 404) {
-        const createRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`, {
-          method: 'POST',
-          headers: {
-            Authorization: `token ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            tag_name: 'robo',
-            name: 'Robo Assets Store',
-            body: 'Automated file storage for IGIT Robotics web portal.',
-            draft: false,
-            prerelease: false
-          })
-         });
-         if (!createRes.ok) throw new Error('Failed to create storage release tag');
-         release = await createRes.json();
-      } else {
-        if (!tagRes.ok) throw new Error('Failed to retrieve release');
-        release = await tagRes.json();
-      }
-
-      const rawUploadUrl = release.upload_url.split('{')[0];
-
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         setBulkStatus(`Uploading file ${i + 1} of ${files.length}: ${file.name}...`);
-        
-        const filename = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
-        const uploadUrl = `${rawUploadUrl}?name=${encodeURIComponent(filename)}`;
-
         try {
-          const uploadRes = await fetch(uploadUrl, {
-            method: 'POST',
-            headers: {
-              Authorization: `token ${token}`,
-              'Content-Type': file.type || 'application/octet-stream'
-            },
-            body: file
-          });
-
-          if (!uploadRes.ok) continue;
-
-          const assetData = await uploadRes.json();
-          const downloadUrl = assetData.browser_download_url;
-
+          const downloadUrl = await uploadToGithubContents(file, file.name);
           const caption = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
           await galleryService.create({
             url: downloadUrl,
