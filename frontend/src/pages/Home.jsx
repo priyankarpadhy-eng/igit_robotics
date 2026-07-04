@@ -587,7 +587,7 @@ const MemberCard = ({ name, role, color, batch, themeColor, img }) => {
   const accentColor = themeColor || color;
 
   const cardBgStyle = {
-    backgroundColor: 'rgba(255, 255, 255, 0.88)',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: '24px',
     padding: '16px',
     display: 'flex',
