@@ -37,39 +37,6 @@ export default function LoginPage() {
     return <Navigate to="/admin" replace />;
   }
 
-  // If logged in as viewer, display session switch panel
-  if (!authLoading && !roleLoading && user && role !== 'admin') {
-    return (
-      <div className="login-container">
-        <div className="login-overlay" />
-        <motion.div 
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="login-card text-center"
-          style={{ textAlign: 'center' }}
-        >
-          <div className="login-logo-box">
-            <img src="/club-logo.png" alt="IGIT Robotics Logo" className="login-logo" />
-          </div>
-          <h1 className="login-title">Active Session</h1>
-          <p className="login-subtitle" style={{ marginBottom: '24px' }}>
-            Connected as <strong style={{ color: 'white' }}>{user.email}</strong>
-          </p>
-          <div className="alert-box success">
-            You are currently signed in as a viewer. To access the admin panel, sign out and use admin credentials.
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '24px' }}>
-            <button onClick={() => navigate('/')} className="btn-primary" style={{ margin: 0 }}>
-              GO TO PORTAL
-            </button>
-            <button onClick={async () => { await signOut(auth); navigate('/login'); }} className="btn-secondary">
-              SIGN OUT / SWITCH ACCOUNT
-            </button>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
 
   const handleLogin = async (e) => {
     e.preventDefault();
