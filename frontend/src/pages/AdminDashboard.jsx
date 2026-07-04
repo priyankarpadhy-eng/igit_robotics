@@ -53,6 +53,9 @@ export default function AdminDashboard() {
   const [customFileName, setCustomFileName] = useState('');
   const [uploadingStatus, setUploadingStatus] = useState('');
   const [generatedUrl, setGeneratedUrl] = useState('');
+  const [inlineUploading, setInlineUploading] = useState({ events: false, gallery: false, members: false });
+  const [bulkUploading, setBulkUploading] = useState(false);
+  const [bulkStatus, setBulkStatus] = useState('');
 
   const triggerToast = (text, type = 'success') => {
     setToast({ text, type });
@@ -150,6 +153,176 @@ export default function AdminDashboard() {
       setMemberForm(prev => ({ ...prev, img: generatedUrl }));
     }
     setShowGitHelper(false);
+  };
+
+  const handleInlineUpload = async (file, targetField) => {
+    if (!file) return;
+    
+    const token = import.meta.env.VITE_GITHUB_TOKEN;
+    const owner = import.meta.env.VITE_GITHUB_OWNER || 'priyankarpadhy-eng';
+    const repo = import.meta.env.VITE_GITHUB_REPO || 'igit_robotics_storage';
+
+    if (!token) {
+      triggerToast('GitHub token configuration is missing', 'error');
+      return;
+    }
+
+    setInlineUploading(prev => ({ ...prev, [targetField]: true }));
+    try {
+      const tagUrl = `https://api.github.com/repos/${owner}/${repo}/releases/tags/robo`;
+      const tagRes = await fetch(tagUrl, {
+        headers: { Authorization: `token ${token}` }
+      });
+
+      let release;
+      if (tagRes.status === 404) {
+        const createRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`, {
+          method: 'POST',
+          headers: {
+            Authorization: `token ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            tag_name: 'robo',
+            name: 'Robo Assets Store',
+            body: 'Automated file storage for IGIT Robotics web portal.',
+            draft: false,
+            prerelease: false
+          })
+         });
+         if (!createRes.ok) throw new Error('Failed to create storage release tag');
+         release = await createRes.json();
+      } else {
+        if (!tagRes.ok) throw new Error('Failed to retrieve release');
+        release = await tagRes.json();
+      }
+
+      const filename = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
+      const rawUploadUrl = release.upload_url.split('{')[0];
+      const uploadUrl = `${rawUploadUrl}?name=${encodeURIComponent(filename)}`;
+
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `token ${token}`,
+          'Content-Type': file.type || 'application/octet-stream'
+        },
+        body: file
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error('Upload rejected by GitHub storage');
+      }
+
+      const assetData = await uploadRes.json();
+      const downloadUrl = assetData.browser_download_url;
+
+      if (targetField === 'events') {
+        setEventForm(prev => ({ ...prev, image: downloadUrl }));
+      } else if (targetField === 'gallery') {
+        setGalleryForm(prev => ({ ...prev, url: downloadUrl }));
+      } else if (targetField === 'members') {
+        setMemberForm(prev => ({ ...prev, img: downloadUrl }));
+      }
+
+      triggerToast('Asset uploaded and link populated');
+    } catch (err) {
+      console.error(err);
+      triggerToast(err.message || 'Inline upload failed', 'error');
+    } finally {
+      setInlineUploading(prev => ({ ...prev, [targetField]: false }));
+    }
+  };
+
+  const handleBulkGalleryUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    const token = import.meta.env.VITE_GITHUB_TOKEN;
+    const owner = import.meta.env.VITE_GITHUB_OWNER || 'priyankarpadhy-eng';
+    const repo = import.meta.env.VITE_GITHUB_REPO || 'igit_robotics_storage';
+
+    if (!token) {
+      triggerToast('GitHub token configuration is missing', 'error');
+      return;
+    }
+
+    setBulkUploading(true);
+    setBulkStatus(`Initiating upload for ${files.length} images...`);
+    try {
+      const tagUrl = `https://api.github.com/repos/${owner}/${repo}/releases/tags/robo`;
+      const tagRes = await fetch(tagUrl, {
+        headers: { Authorization: `token ${token}` }
+      });
+
+      let release;
+      if (tagRes.status === 404) {
+        const createRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`, {
+          method: 'POST',
+          headers: {
+            Authorization: `token ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            tag_name: 'robo',
+            name: 'Robo Assets Store',
+            body: 'Automated file storage for IGIT Robotics web portal.',
+            draft: false,
+            prerelease: false
+          })
+         });
+         if (!createRes.ok) throw new Error('Failed to create storage release tag');
+         release = await createRes.json();
+      } else {
+        if (!tagRes.ok) throw new Error('Failed to retrieve release');
+        release = await tagRes.json();
+      }
+
+      const rawUploadUrl = release.upload_url.split('{')[0];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        setBulkStatus(`Uploading file ${i + 1} of ${files.length}: ${file.name}...`);
+        
+        const filename = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
+        const uploadUrl = `${rawUploadUrl}?name=${encodeURIComponent(filename)}`;
+
+        try {
+          const uploadRes = await fetch(uploadUrl, {
+            method: 'POST',
+            headers: {
+              Authorization: `token ${token}`,
+              'Content-Type': file.type || 'application/octet-stream'
+            },
+            body: file
+          });
+
+          if (!uploadRes.ok) continue;
+
+          const assetData = await uploadRes.json();
+          const downloadUrl = assetData.browser_download_url;
+
+          const caption = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+          await galleryService.create({
+            url: downloadUrl,
+            title: caption,
+            context: 'Bulk Uploaded Asset'
+          });
+        } catch (innerErr) {
+          console.error(`Failed to upload ${file.name}:`, innerErr);
+        }
+      }
+
+      setBulkStatus('Bulk upload completed!');
+      triggerToast(`Successfully processed bulk uploads`);
+      loadAllData();
+    } catch (err) {
+      console.error(err);
+      triggerToast(err.message || 'Bulk upload failed', 'error');
+    } finally {
+      setBulkUploading(false);
+      setTimeout(() => setBulkStatus(''), 4000);
+    }
   };
 
   const loadAllData = async () => {
@@ -445,6 +618,18 @@ export default function AdminDashboard() {
                         placeholder="https://images.unsplash.com/..."
                         required 
                       />
+                      <div style={{ marginTop: '8px' }}>
+                        <label style={{ fontSize: '0.7rem', color: '#fbc531', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'underline', fontWeight: 700 }}>
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            style={{ display: 'none' }} 
+                            onChange={(e) => handleInlineUpload(e.target.files[0], 'events')}
+                            disabled={inlineUploading.events}
+                          />
+                          {inlineUploading.events ? 'UPLOADING TO GITHUB...' : 'Or Upload file directly'}
+                        </label>
+                      </div>
                     </div>
 
                     <div className="row-group">
@@ -530,6 +715,18 @@ export default function AdminDashboard() {
                         placeholder="https://images.unsplash.com/..."
                         required 
                       />
+                      <div style={{ marginTop: '8px' }}>
+                        <label style={{ fontSize: '0.7rem', color: '#fbc531', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'underline', fontWeight: 700 }}>
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            style={{ display: 'none' }} 
+                            onChange={(e) => handleInlineUpload(e.target.files[0], 'gallery')}
+                            disabled={inlineUploading.gallery}
+                          />
+                          {inlineUploading.gallery ? 'UPLOADING TO GITHUB...' : 'Or Upload file directly'}
+                        </label>
+                      </div>
                     </div>
                     <div className="form-group">
                       <label>CAPTION / TITLE</label>
@@ -553,6 +750,40 @@ export default function AdminDashboard() {
                     </div>
                     <button type="submit" className="btn-save">UPLOAD TO GALLERY</button>
                   </form>
+
+                  {/* Bulk Uploader Section */}
+                  <div style={{ marginTop: '32px', padding: '24px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <h3 style={{ margin: '0 0 8px 0', fontSize: '1rem', fontWeight: 800, color: 'white' }}>BULK UPLOAD TO GALLERY</h3>
+                    <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 16px 0', lineHeight: 1.4 }}>
+                      Select multiple images at once. They will be uploaded directly to GitHub and added to the gallery database.
+                    </p>
+                    <label style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                      border: '2px dashed rgba(255,255,255,0.12)', borderRadius: '8px', padding: '24px', cursor: 'pointer',
+                      background: 'rgba(0,0,0,0.15)', textAlign: 'center'
+                    }}>
+                      <input 
+                        type="file" 
+                        multiple 
+                        accept="image/*" 
+                        style={{ display: 'none' }} 
+                        onChange={handleBulkGalleryUpload}
+                        disabled={bulkUploading}
+                      />
+                      <svg style={{ width: '28px', height: '28px', color: '#fbc531', marginBottom: '8px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                      </svg>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f1f5f9' }}>
+                        {bulkUploading ? 'BULK UPLOADING...' : 'CHOOSE MULTIPLE IMAGES'}
+                      </span>
+                    </label>
+
+                    {bulkStatus && (
+                      <div style={{ marginTop: '12px', fontSize: '0.75rem', color: '#fbc531', fontWeight: 700 }}>
+                        {bulkStatus}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* List column */}
@@ -625,6 +856,18 @@ export default function AdminDashboard() {
                         onChange={e => setMemberForm({ ...memberForm, img: e.target.value })}
                         placeholder="e.g. /satys-sworup.png"
                       />
+                      <div style={{ marginTop: '8px' }}>
+                        <label style={{ fontSize: '0.7rem', color: '#fbc531', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'underline', fontWeight: 700 }}>
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            style={{ display: 'none' }} 
+                            onChange={(e) => handleInlineUpload(e.target.files[0], 'members')}
+                            disabled={inlineUploading.members}
+                          />
+                          {inlineUploading.members ? 'UPLOADING TO GITHUB...' : 'Or Upload file directly'}
+                        </label>
+                      </div>
                     </div>
                     <div className="row-group">
                       <div className="form-group">
