@@ -16,7 +16,7 @@ export const useRole = () => {
       return; 
     }
     
-    const docRef = doc(db, 'profiles', user.uid);
+    const docRef = doc(db, 'users', user.uid);
     getDoc(docRef)
       .then((docSnap) => {
         if (docSnap.exists()) {

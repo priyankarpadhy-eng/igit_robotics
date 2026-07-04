@@ -14,8 +14,8 @@ export function AuthProvider({ children }) {
     return onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {
-          // Upsert profile in Firestore profiles collection
-          const docRef = doc(db, 'profiles', firebaseUser.uid);
+          // Upsert profile in Firestore users collection
+          const docRef = doc(db, 'users', firebaseUser.uid);
           await setDoc(docRef, {
             id: firebaseUser.uid,
             email: firebaseUser.email,
