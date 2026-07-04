@@ -1,0 +1,3753 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IGIT Robotics — Indira Gandhi Institute of Technology, Sarang</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/CustomEase.min.js"></script>
+    <style>
+        /* ── TOKENS ─────────────────────────────────────────── */
+        :root {
+            --ease: cubic-bezier(.16, 1, .3, 1);
+            --sans: 'Space Grotesk', sans-serif;
+            --display: 'Syne', sans-serif;
+            --mono: 'JetBrains Mono', monospace;
+        }
+
+        [data-theme="dark"] {
+            --bg: #090c12;
+            --bg2: #0e1119;
+            --card: #131720;
+            --card2: #181e2a;
+            --b: rgba(255, 255, 255, .07);
+            --bhi: rgba(255, 255, 255, .12);
+            --t: #dde6f2;
+            --t2: #7688a0;
+            --t3: #38485a;
+            --ac: #4a8cf7;
+            --acs: rgba(74, 140, 247, .1);
+            --acb: rgba(74, 140, 247, .28);
+            --or: #e07848;
+            --ors: rgba(224, 120, 72, .1);
+            --orb: rgba(224, 120, 72, .3);
+            --ok: #3aaa70;
+            --sh: 0 2px 16px rgba(0, 0, 0, .55);
+        }
+
+        [data-theme="light"] {
+            --bg: #f4f6fa;
+            --bg2: #edf0f6;
+            --card: #ffffff;
+            --card2: #f8f9fc;
+            --b: rgba(0, 0, 0, .07);
+            --bhi: rgba(0, 0, 0, .12);
+            --t: #111827;
+            --t2: #4b5563;
+            --t3: #9ca3af;
+            --ac: #2563eb;
+            --acs: rgba(37, 99, 235, .08);
+            --acb: rgba(37, 99, 235, .22);
+            --or: #c2410c;
+            --ors: rgba(194, 65, 12, .08);
+            --orb: rgba(194, 65, 12, .28);
+            --ok: #15803d;
+            --sh: 0 1px 6px rgba(0, 0, 0, .08), 0 4px 20px rgba(0, 0, 0, .05);
+        }
+
+        /* ── RESET ──────────────────────────────────────────── */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: auto
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--t);
+            font-family: var(--sans);
+            overflow-x: hidden;
+            cursor: none;
+            -webkit-font-smoothing: antialiased;
+            transition: background .4s, color .4s;
+        }
+
+        /* grain */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 9000;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.72' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.02'/%3E%3C/svg%3E");
+            opacity: .45;
+            mix-blend-mode: overlay;
+        }
+
+        /* ── CURSOR ─────────────────────────────────────────── */
+        #cur {
+            position: fixed;
+            width: 7px;
+            height: 7px;
+            background: var(--ac);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            will-change: left, top;
+            transition: width .2s, height .2s, background .3s
+        }
+
+        #cur-ring {
+            position: fixed;
+            width: 26px;
+            height: 26px;
+            border: 1.5px solid var(--acb);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9998;
+            transform: translate(-50%, -50%);
+            transition: width .25s, height .25s, border-color .3s
+        }
+
+        body.ch #cur {
+            width: 4px;
+            height: 4px
+        }
+
+        body.ch #cur-ring {
+            width: 44px;
+            height: 44px;
+            border-color: var(--ac)
+        }
+
+        .tpt {
+            position: fixed;
+            border-radius: 50%;
+            background: var(--ac);
+            pointer-events: none;
+            z-index: 9995;
+            transform: translate(-50%, -50%);
+            transition: background .3s
+        }
+
+        /* ── SCROLL BAR ─────────────────────────────────────── */
+        #spb {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 2px;
+            width: 100%;
+            background: var(--ac);
+            transform-origin: left;
+            transform: scaleX(0);
+            z-index: 800;
+            opacity: .65;
+            transition: background .3s
+        }
+
+        /* ── THEME TOGGLE ───────────────────────────────────── */
+        #tt {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 900;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid var(--bhi);
+            background: var(--card);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: none;
+            font-size: .95rem;
+            box-shadow: var(--sh);
+            transition: background .3s, border-color .3s, transform .25s
+        }
+
+        #tt:hover {
+            transform: scale(1.1);
+            border-color: var(--acb)
+        }
+
+        /* ── PRELOADER ──────────────────────────────────────── */
+        #pre {
+            position: fixed;
+            inset: 0;
+            background: #090c12;
+            z-index: 9500;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px
+        }
+
+        .pre-word {
+            font-family: var(--display);
+            font-size: clamp(44px, 9vw, 88px);
+            font-weight: 800;
+            letter-spacing: .14em;
+            color: #dde6f2;
+            display: flex;
+            overflow: hidden
+        }
+
+        .pre-word span {
+            display: inline-block;
+            transform: translateY(120%)
+        }
+
+        .pre-sub {
+            font-family: var(--mono);
+            font-size: .58rem;
+            letter-spacing: .32em;
+            text-transform: uppercase;
+            color: #38485a
+        }
+
+        .pre-bar {
+            width: 160px;
+            height: 1px;
+            background: rgba(255, 255, 255, .07);
+            overflow: hidden
+        }
+
+        .pre-fill {
+            height: 100%;
+            width: 0;
+            background: #4a8cf7
+        }
+
+        .pre-pct {
+            font-family: var(--mono);
+            font-size: .6rem;
+            letter-spacing: .24em;
+            color: #4a8cf7;
+            opacity: .5
+        }
+
+        /* ── NAV ────────────────────────────────────────────── */
+        #nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 700;
+            height: 66px;
+            opacity: 0;
+            transition: background .4s, border-color .4s, backdrop-filter .4s
+        }
+
+        #nav.sc {
+            background: rgba(9, 12, 18, .85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--b)
+        }
+
+        [data-theme="light"] #nav.sc {
+            background: rgba(244, 246, 250, .9)
+        }
+
+        .nav-in {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 0 64px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .nb {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            text-decoration: none
+        }
+
+        .nb-box {
+            width: 32px;
+            height: 32px;
+            border: 1.5px solid var(--acb);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative
+        }
+
+        .nb-box::before {
+            content: '';
+            position: absolute;
+            inset: 4px;
+            border: 1px solid var(--acb);
+            opacity: .4;
+            animation: ssp 14s linear infinite
+        }
+
+        @keyframes ssp {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        .nb-gem {
+            width: 9px;
+            height: 9px;
+            background: var(--ac);
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)
+        }
+
+        .nb-txt {
+            display: flex;
+            flex-direction: column;
+            gap: 1px
+        }
+
+        .nb-main {
+            font-family: var(--display);
+            font-size: .75rem;
+            font-weight: 800;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--t);
+            transition: color .3s
+        }
+
+        .nb-sub {
+            font-family: var(--mono);
+            font-size: .42rem;
+            letter-spacing: .2em;
+            text-transform: uppercase;
+            color: var(--t2);
+            opacity: .55
+        }
+
+        .nl {
+            display: flex;
+            gap: 28px;
+            list-style: none
+        }
+
+        .nl a {
+            font-family: var(--mono);
+            font-size: .6rem;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--t2);
+            text-decoration: none;
+            position: relative;
+            transition: color .3s;
+            padding-bottom: 2px
+        }
+
+        .nl a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: var(--ac);
+            transition: width .3s
+        }
+
+        .nl a:hover {
+            color: var(--t)
+        }
+
+        .nl a:hover::after {
+            width: 100%
+        }
+
+        .nj {
+            font-family: var(--mono);
+            font-size: .58rem;
+            letter-spacing: .15em;
+            text-transform: uppercase;
+            color: var(--ac);
+            text-decoration: none;
+            padding: 8px 17px;
+            border: 1.5px solid var(--acb);
+            position: relative;
+            overflow: hidden;
+            transition: color .3s
+        }
+
+        .nj::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--ac);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform .3s var(--ease)
+        }
+
+        .nj:hover::before {
+            transform: scaleX(1)
+        }
+
+        .nj:hover {
+            color: #fff
+        }
+
+        .nj span {
+            position: relative;
+            z-index: 1
+        }
+
+        /* ── HERO ────────────────────────────────────────────── */
+        .hero {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hc-tl,
+        .hc-bl {
+            position: absolute;
+            width: 26px;
+            height: 26px;
+            pointer-events: none;
+            z-index: 3
+        }
+
+        .hc-tl {
+            top: 20px;
+            left: 20px;
+            border-top: 1px solid var(--acb);
+            border-left: 1px solid var(--acb)
+        }
+
+        .hc-bl {
+            bottom: 20px;
+            left: 20px;
+            border-bottom: 1px solid var(--acb);
+            border-left: 1px solid var(--acb)
+        }
+
+        .hero-divider {
+            position: absolute;
+            left: 50%;
+            top: 10%;
+            bottom: 10%;
+            width: 1px;
+            background: var(--b);
+            z-index: 1
+        }
+
+        /* left */
+        .hero-left {
+            padding: 130px 48px 100px 64px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            z-index: 2
+        }
+
+        .hkick {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            margin-bottom: 26px;
+            font-family: var(--mono);
+            font-size: .58rem;
+            letter-spacing: .26em;
+            text-transform: uppercase;
+            color: var(--ac);
+            opacity: 0
+        }
+
+        .kl {
+            width: 18px;
+            height: 1px;
+            background: var(--ac)
+        }
+
+        .kd {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--ok);
+            box-shadow: 0 0 6px var(--ok);
+            flex-shrink: 0;
+            animation: kp 2s ease infinite
+        }
+
+        @keyframes kp {
+
+            0%,
+            100% {
+                box-shadow: 0 0 4px var(--ok)
+            }
+
+            50% {
+                box-shadow: 0 0 10px var(--ok)
+            }
+        }
+
+        .hero-h {
+            font-family: var(--display);
+            font-weight: 800;
+            font-size: clamp(50px, 5.8vw, 82px);
+            line-height: .9;
+            letter-spacing: -.02em;
+            text-transform: uppercase
+        }
+
+        .hm {
+            overflow: hidden;
+            display: block
+        }
+
+        .hl {
+            display: block;
+            transform: translateY(110%)
+        }
+
+        .hl .aw {
+            color: var(--ac)
+        }
+
+        .hl .dw {
+            opacity: .18
+        }
+
+        .hdes {
+            margin-top: 28px;
+            max-width: 460px;
+            font-size: .98rem;
+            line-height: 1.82;
+            color: var(--t2);
+            opacity: 0
+        }
+
+        .hdes strong {
+            color: var(--t);
+            font-weight: 600
+        }
+
+        .hbtns {
+            display: flex;
+            gap: 12px;
+            margin-top: 36px;
+            flex-wrap: wrap;
+            opacity: 0
+        }
+
+        .bp {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            padding: 12px 28px;
+            background: var(--ac);
+            font-family: var(--mono);
+            font-size: .6rem;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: #fff;
+            text-decoration: none;
+            transition: opacity .3s, transform .3s;
+            font-weight: 500
+        }
+
+        .bp:hover {
+            opacity: .86;
+            transform: translateY(-1px)
+        }
+
+        .bs {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            padding: 12px 22px;
+            border: 1.5px solid var(--bhi);
+            font-family: var(--mono);
+            font-size: .6rem;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--t2);
+            text-decoration: none;
+            transition: border-color .3s, color .3s, background .3s
+        }
+
+        .bs:hover {
+            border-color: var(--acb);
+            color: var(--t);
+            background: var(--acs)
+        }
+
+        .hstat {
+            display: flex;
+            gap: 0;
+            margin-top: 48px;
+            border-top: 1px solid var(--b);
+            padding-top: 24px;
+            opacity: 0
+        }
+
+        .hs {
+            flex: 1;
+            padding-right: 20px;
+            border-right: 1px solid var(--b)
+        }
+
+        .hs:last-child {
+            border-right: none;
+            padding-right: 0
+        }
+
+        .hs:not(:first-child) {
+            padding-left: 20px
+        }
+
+        .hs-n {
+            font-family: var(--display);
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--t);
+            line-height: 1;
+            display: flex;
+            align-items: baseline;
+            gap: 3px
+        }
+
+        .hs-s {
+            font-size: .5em;
+            color: var(--ac);
+            font-family: var(--mono)
+        }
+
+        .hs-l {
+            font-family: var(--mono);
+            font-size: .5rem;
+            letter-spacing: .17em;
+            text-transform: uppercase;
+            color: var(--t2);
+            margin-top: 5px;
+            opacity: .65
+        }
+
+        .hscr {
+            position: absolute;
+            bottom: 32px;
+            left: 64px;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            opacity: 0
+        }
+
+        .scs {
+            width: 1px;
+            height: 34px;
+            background: var(--bhi);
+            position: relative;
+            overflow: hidden
+        }
+
+        .scs::after {
+            content: '';
+            position: absolute;
+            top: -100%;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--ac);
+            animation: scd 2.2s ease-in-out infinite
+        }
+
+        @keyframes scd {
+            0% {
+                top: -100%
+            }
+
+            100% {
+                top: 100%
+            }
+        }
+
+        .scl {
+            font-family: var(--mono);
+            font-size: .48rem;
+            letter-spacing: .2em;
+            text-transform: uppercase;
+            color: var(--t3);
+            writing-mode: vertical-rl
+        }
+
+        /* right — drone canvas */
+        .hero-right {
+            height: 100vh;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #hero-canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0
+        }
+
+        [data-theme="light"] #hero-canvas {
+            opacity: .3
+        }
+
+        .dhud {
+            position: absolute;
+            bottom: 90px;
+            right: 32px;
+            font-family: var(--mono);
+            font-size: .52rem;
+            letter-spacing: .13em;
+            color: var(--ac);
+            opacity: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            text-align: right;
+            z-index: 3
+        }
+
+        .dhud span {
+            color: var(--t2)
+        }
+
+        /* ── MARQUEE ─────────────────────────────────────────── */
+        .mq-wrap {
+            padding: 16px 0;
+            overflow: hidden;
+            border-top: 1px solid var(--b);
+            border-bottom: 1px solid var(--b);
+            background: var(--bg2);
+            position: relative;
+            z-index: 2;
+            transition: background .4s
+        }
+
+        .mq-row {
+            display: flex;
+            white-space: nowrap;
+            will-change: transform
+        }
+
+        .mq-row+.mq-row {
+            margin-top: 6px
+        }
+
+        .mq-i {
+            display: inline-flex;
+            align-items: center;
+            gap: 16px;
+            padding: 0 16px;
+            font-family: var(--mono);
+            font-size: .58rem;
+            letter-spacing: .16em;
+            text-transform: uppercase;
+            color: var(--t3);
+            flex-shrink: 0
+        }
+
+        .mq-i.hi {
+            color: rgba(74, 140, 247, .42)
+        }
+
+        .mq-s {
+            width: 4px;
+            height: 4px;
+            background: var(--ac);
+            opacity: .32;
+            flex-shrink: 0
+        }
+
+        /* ── SECTION WRAPPER ────────────────────────────────── */
+        .section {
+            border-top: 1px solid var(--b);
+            position: relative;
+            z-index: 2
+        }
+
+        .si {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 96px 64px
+        }
+
+        .sec-ey {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            margin-bottom: 14px;
+            font-family: var(--mono);
+            font-size: .56rem;
+            letter-spacing: .26em;
+            text-transform: uppercase;
+            color: var(--ac)
+        }
+
+        .sec-en {
+            opacity: .42
+        }
+
+        .sec-el {
+            width: 20px;
+            height: 1px;
+            background: var(--ac);
+            opacity: .38
+        }
+
+        .sh {
+            font-family: var(--display);
+            font-weight: 800;
+            font-size: clamp(26px, 3.2vw, 44px);
+            line-height: 1.06;
+            letter-spacing: -.01em;
+            text-transform: uppercase;
+            margin-bottom: 48px
+        }
+
+        .sh .aw {
+            color: var(--ac)
+        }
+
+        .sh em {
+            font-style: normal;
+            color: var(--t2)
+        }
+
+        /* ── ABOUT ──────────────────────────────────────────── */
+        .ag {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 68px;
+            align-items: start
+        }
+
+        .abp {
+            font-size: .95rem;
+            line-height: 1.86;
+            color: var(--t2);
+            margin-bottom: 18px
+        }
+
+        .abp strong {
+            color: var(--t);
+            font-weight: 600
+        }
+
+        .pillars {
+            margin-top: 32px;
+            display: flex;
+            flex-direction: column
+        }
+
+        .pillar {
+            display: grid;
+            grid-template-columns: 30px 1fr;
+            gap: 12px;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--b);
+            align-items: start;
+            position: relative;
+            transition: padding-left .28s;
+            cursor: default
+        }
+
+        .pillar::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--ac);
+            transform: scaleY(0);
+            transform-origin: top;
+            transition: transform .38s var(--ease)
+        }
+
+        .pillar:hover::before {
+            transform: scaleY(1)
+        }
+
+        .pillar:hover {
+            padding-left: 9px
+        }
+
+        .pn {
+            font-family: var(--mono);
+            font-size: .54rem;
+            color: var(--ac);
+            opacity: .38;
+            padding-top: 2px
+        }
+
+        .pt {
+            font-family: var(--display);
+            font-size: .82rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--t);
+            margin-bottom: 5px
+        }
+
+        .pd {
+            font-size: .8rem;
+            line-height: 1.7;
+            color: var(--t2)
+        }
+
+        /* terminal */
+        .term {
+            background: var(--card);
+            border: 1px solid var(--b);
+            box-shadow: var(--sh);
+            transition: background .4s, border-color .4s
+        }
+
+        .term-bar {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 9px 13px;
+            background: var(--bg2);
+            border-bottom: 1px solid var(--b);
+            transition: background .4s
+        }
+
+        .td {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%
+        }
+
+        .td.r {
+            background: #ef4444;
+            opacity: .6
+        }
+
+        .td.y {
+            background: #f59e0b;
+            opacity: .6
+        }
+
+        .td.g {
+            background: #22c55e;
+            opacity: .6
+        }
+
+        .ttl {
+            margin-left: 8px;
+            font-family: var(--mono);
+            font-size: .48rem;
+            letter-spacing: .14em;
+            color: var(--t3)
+        }
+
+        .term-body {
+            padding: 15px 17px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-height: 250px
+        }
+
+        .tl {
+            display: flex;
+            gap: 9px;
+            opacity: 0;
+            transform: translateX(-5px)
+        }
+
+        .tp {
+            color: var(--ac);
+            font-family: var(--mono);
+            font-size: .66rem
+        }
+
+        .tc {
+            color: var(--ok);
+            font-family: var(--mono);
+            font-size: .66rem
+        }
+
+        .to {
+            color: var(--t2);
+            font-family: var(--mono);
+            font-size: .64rem;
+            padding-left: 15px
+        }
+
+        .tcr {
+            display: inline-block;
+            width: 6px;
+            height: 11px;
+            background: var(--ac);
+            vertical-align: middle;
+            animation: bl .9s step-end infinite
+        }
+
+        @keyframes bl {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0
+            }
+        }
+
+        /* ── DOMAINS ─────────────────────────────────────────── */
+        .dg {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: var(--b)
+        }
+
+        .dc {
+            background: var(--card);
+            padding: 34px 28px;
+            position: relative;
+            overflow: hidden;
+            transition: background .4s;
+            cursor: default
+        }
+
+        .dc:hover {
+            background: var(--card2)
+        }
+
+        .dc::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 28px;
+            right: 28px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--ac), transparent);
+            transform: scaleX(0);
+            transform-origin: center;
+            transition: transform .42s var(--ease);
+            opacity: .5
+        }
+
+        .dc:hover::after {
+            transform: scaleX(1)
+        }
+
+        .dc-n {
+            font-family: var(--mono);
+            font-size: .52rem;
+            letter-spacing: .17em;
+            color: var(--ac);
+            opacity: .35;
+            margin-bottom: 16px
+        }
+
+        .dc-ic {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            display: block;
+            transition: transform .3s
+        }
+
+        .dc:hover .dc-ic {
+            transform: scale(1.1)
+        }
+
+        .dc-name {
+            font-family: var(--display);
+            font-size: .84rem;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--t);
+            margin-bottom: 9px
+        }
+
+        .dc-desc {
+            font-size: .79rem;
+            line-height: 1.72;
+            color: var(--t2);
+            margin-bottom: 16px
+        }
+
+        .dc-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px
+        }
+
+        .dtag {
+            font-family: var(--mono);
+            font-size: .49rem;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border: 1px solid var(--b);
+            color: var(--t3);
+            transition: border-color .3s, color .3s
+        }
+
+        .dc:hover .dtag {
+            border-color: var(--acb);
+            color: var(--ac)
+        }
+
+        /* ── PROJECTS ────────────────────────────────────────── */
+        .proj-sec {
+            border-top: 1px solid var(--b);
+            position: relative;
+            z-index: 2;
+            padding: 0 0 96px
+        }
+
+        .proj-head {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 96px 64px 48px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end
+        }
+
+        .proj-big {
+            font-family: var(--display);
+            font-size: 3.8rem;
+            font-weight: 800;
+            color: transparent;
+            -webkit-text-stroke: 1px var(--bhi);
+            letter-spacing: .06em
+        }
+
+        /* CSS horizontal scroll — no GSAP pin, never gets stuck */
+        .proj-scr {
+            overflow-x: auto;
+            overflow-y: visible;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            padding-bottom: 8px
+        }
+
+        .proj-scr::-webkit-scrollbar {
+            display: none
+        }
+
+        .proj-track {
+            display: flex;
+            gap: 14px;
+            padding: 0 64px;
+            width: max-content
+        }
+
+        .pc {
+            width: 360px;
+            height: 470px;
+            flex-shrink: 0;
+            background: var(--card);
+            border: 1px solid var(--b);
+            position: relative;
+            overflow: hidden;
+            cursor: none;
+            transform-style: preserve-3d;
+            transition: background .4s, border-color .4s;
+            box-shadow: var(--sh)
+        }
+
+        .pc:hover {
+            border-color: var(--bhi)
+        }
+
+        .pc-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform .42s var(--ease)
+        }
+
+        .pc:hover .pc-bar {
+            transform: scaleX(1)
+        }
+
+        .p1 .pc-bar {
+            background: var(--ac)
+        }
+
+        .p2 .pc-bar {
+            background: var(--or)
+        }
+
+        .p3 .pc-bar {
+            background: var(--ok)
+        }
+
+        .p4 .pc-bar {
+            background: var(--ac)
+        }
+
+        .p5 .pc-bar {
+            background: var(--or)
+        }
+
+        .pc-pat {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            opacity: .022;
+            background-image: radial-gradient(var(--ac) 1px, transparent 1px);
+            background-size: 26px 26px;
+            mask-image: radial-gradient(ellipse at center, black 32%, transparent 68%)
+        }
+
+        .pc-con {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            padding: 24px;
+            display: flex;
+            flex-direction: column
+        }
+
+        .pc-cat {
+            font-family: var(--mono);
+            font-size: .48rem;
+            letter-spacing: .18em;
+            text-transform: uppercase;
+            color: var(--t3);
+            border: 1px solid var(--b);
+            padding: 4px 9px;
+            display: inline-block;
+            width: fit-content;
+            transition: border-color .3s, color .3s
+        }
+
+        .pc:hover .pc-cat {
+            border-color: var(--acb);
+            color: var(--ac)
+        }
+
+        .pc-sp {
+            flex: 1
+        }
+
+        .pc-st {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-family: var(--mono);
+            font-size: .48rem;
+            letter-spacing: .13em;
+            text-transform: uppercase;
+            color: var(--ok);
+            margin-bottom: 6px
+        }
+
+        .pc-sd {
+            width: 5px;
+            height: 5px;
+            background: var(--ok);
+            border-radius: 50%;
+            animation: bl 1.6s step-end infinite
+        }
+
+        .pc-name {
+            font-family: var(--display);
+            font-size: 1.28rem;
+            font-weight: 800;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            color: var(--t);
+            line-height: 1.15;
+            margin-bottom: 8px
+        }
+
+        .pc-desc {
+            font-size: .75rem;
+            line-height: 1.65;
+            color: var(--t2)
+        }
+
+        .pc-foot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 13px;
+            border-top: 1px solid var(--b);
+            margin-top: 14px
+        }
+
+        .pc-stack {
+            font-family: var(--mono);
+            font-size: .48rem;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--t3)
+        }
+
+        .pc-lnk {
+            width: 28px;
+            height: 28px;
+            border: 1px solid var(--b);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--t3);
+            font-size: .78rem;
+            text-decoration: none;
+            transition: border-color .3s, color .3s, transform .38s
+        }
+
+        .pc:hover .pc-lnk {
+            border-color: var(--acb);
+            color: var(--ac);
+            transform: rotate(45deg)
+        }
+
+        /* ── DRONE SECTION ──────────────────────────────────── */
+        .drone-sec {
+            border-top: 1px solid var(--b);
+            position: relative;
+            z-index: 2;
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            align-items: stretch
+        }
+
+        .drone-left {
+            padding: 96px 48px 96px 64px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center
+        }
+
+        .drone-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 6px 13px;
+            border: 1px solid var(--acb);
+            background: var(--acs);
+            font-family: var(--mono);
+            font-size: .54rem;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--ac);
+            margin-bottom: 22px;
+            width: fit-content
+        }
+
+        .drone-badge-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--ok);
+            animation: kp 2s ease infinite
+        }
+
+        .drone-specs {
+            margin-top: 36px;
+            display: flex;
+            flex-direction: column
+        }
+
+        .ds-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--b)
+        }
+
+        .ds-lbl {
+            font-family: var(--mono);
+            font-size: .56rem;
+            letter-spacing: .15em;
+            text-transform: uppercase;
+            color: var(--t2)
+        }
+
+        .ds-val {
+            font-family: var(--mono);
+            font-size: .6rem;
+            letter-spacing: .1em;
+            color: var(--ac);
+            font-weight: 500
+        }
+
+        .drone-right {
+            position: relative;
+            min-height: 600px;
+            overflow: hidden
+        }
+
+        #drone-canvas {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            inset: 0
+        }
+
+        /* ROVER CONTROLS */
+        .rover-controls {
+            margin-top: 32px
+        }
+
+        .rover-play-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 13px 32px;
+            background: var(--ac);
+            border: none;
+            font-family: var(--mono);
+            font-size: .68rem;
+            letter-spacing: .18em;
+            text-transform: uppercase;
+            color: #fff;
+            cursor: none;
+            transition: opacity .25s, transform .25s;
+            clip-path: polygon(10px 0%, 100% 0%, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0% 100%, 0% 10px);
+        }
+
+        .rover-play-btn:hover {
+            opacity: .85;
+            transform: translateY(-1px)
+        }
+
+        .rpb-icon {
+            font-size: .9rem
+        }
+
+        .rover-keys {
+            margin-top: 20px
+        }
+
+        .rk-hint {
+            font-family: var(--mono);
+            font-size: .56rem;
+            letter-spacing: .2em;
+            text-transform: uppercase;
+            color: var(--txt2);
+            margin-bottom: 14px
+        }
+
+        .rk-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-bottom: 18px
+        }
+
+        .rk-row {
+            display: flex;
+            gap: 5px
+        }
+
+        .rk-key {
+            width: 40px;
+            height: 40px;
+            border: 1.5px solid var(--b);
+            background: var(--card);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--mono);
+            font-size: .72rem;
+            font-weight: 600;
+            color: var(--txt2);
+            transition: background .15s, border-color .15s, color .15s, transform .1s;
+            user-select: none;
+            border-radius: 4px;
+            box-shadow: 0 3px 0 rgba(0, 0, 0, .4);
+        }
+
+        .rk-key.active {
+            background: var(--ac);
+            border-color: var(--ac);
+            color: #fff;
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, .4)
+        }
+
+        .rover-speed-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px
+        }
+
+        .rover-speed-lbl {
+            font-family: var(--mono);
+            font-size: .52rem;
+            letter-spacing: .2em;
+            text-transform: uppercase;
+            color: var(--txt3);
+            flex-shrink: 0
+        }
+
+        .rover-speed-bar {
+            flex: 1;
+            height: 3px;
+            background: var(--b);
+            overflow: hidden;
+            border-radius: 2px
+        }
+
+        .rover-speed-fill {
+            height: 100%;
+            width: 0;
+            background: var(--ac);
+            transition: width .1s;
+            border-radius: 2px
+        }
+
+        .rover-speed-val {
+            font-family: var(--mono);
+            font-size: .58rem;
+            color: var(--ac);
+            flex-shrink: 0;
+            min-width: 56px
+        }
+
+        .rover-stop-btn {
+            padding: 8px 18px;
+            border: 1.5px solid rgba(224, 112, 64, .4);
+            background: rgba(224, 112, 64, .08);
+            font-family: var(--mono);
+            font-size: .58rem;
+            letter-spacing: .16em;
+            text-transform: uppercase;
+            color: var(--or);
+            cursor: none;
+            transition: background .25s, border-color .25s;
+        }
+
+        .rover-stop-btn:hover {
+            background: rgba(224, 112, 64, .16);
+            border-color: var(--orb)
+        }
+
+        /* ── MANIFESTO (CSS sticky, no GSAP pin) ────────────── */
+        .man-sec {
+            position: relative;
+            z-index: 2;
+            border-top: 1px solid var(--b)
+        }
+
+        .man-sp {
+            min-height: 280vh
+        }
+
+        .man-st {
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden
+        }
+
+        .man-txt {
+            font-family: var(--display);
+            font-weight: 800;
+            font-size: clamp(22px, 3.6vw, 48px);
+            line-height: 1.22;
+            text-align: center;
+            max-width: 860px;
+            padding: 0 64px;
+            text-transform: uppercase;
+            letter-spacing: .01em
+        }
+
+        .mw {
+            display: inline-block;
+            margin: 0 .07em;
+            opacity: .07;
+            will-change: opacity;
+            transition: color .15s
+        }
+
+        .mw.lit {
+            color: var(--ac)
+        }
+
+        /* ── TEAM ───────────────────────────────────────────── */
+        .tg {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: var(--b)
+        }
+
+        .tc2 {
+            background: var(--card);
+            padding: 28px 24px;
+            position: relative;
+            overflow: hidden;
+            transition: background .4s
+        }
+
+        .tc2:hover {
+            background: var(--card2)
+        }
+
+        .tc2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--ac), transparent);
+            transform: scaleX(0);
+            transform-origin: center;
+            transition: transform .42s var(--ease);
+            opacity: .4
+        }
+
+        .tc2:hover::after {
+            transform: scaleX(1)
+        }
+
+        .ta {
+            width: 48px;
+            height: 48px;
+            border: 1.5px solid var(--bhi);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 14px;
+            font-family: var(--display);
+            font-size: .84rem;
+            font-weight: 800;
+            letter-spacing: .05em;
+            color: var(--ac);
+            background: var(--acs);
+            transition: border-color .3s
+        }
+
+        .tc2:hover .ta {
+            border-color: var(--acb)
+        }
+
+        .tname {
+            font-family: var(--display);
+            font-size: .78rem;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--t);
+            margin-bottom: 2px
+        }
+
+        .trole {
+            font-family: var(--mono);
+            font-size: .52rem;
+            letter-spacing: .13em;
+            text-transform: uppercase;
+            color: var(--ac);
+            opacity: .62;
+            margin-bottom: 9px
+        }
+
+        .tdesc {
+            font-size: .77rem;
+            line-height: 1.62;
+            color: var(--t2)
+        }
+
+        /* ── ACHIEVEMENTS ───────────────────────────────────── */
+        .ach-g {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: var(--b)
+        }
+
+        .ac2 {
+            background: var(--card);
+            padding: 32px 28px;
+            position: relative;
+            overflow: hidden;
+            transition: background .4s
+        }
+
+        .ac2:hover {
+            background: var(--card2)
+        }
+
+        .ac2::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 28px;
+            right: 28px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--or), transparent);
+            transform: scaleX(0);
+            transform-origin: center;
+            transition: transform .42s var(--ease);
+            opacity: .6
+        }
+
+        .ac2:hover::before {
+            transform: scaleX(1)
+        }
+
+        .ay {
+            font-family: var(--mono);
+            font-size: .52rem;
+            letter-spacing: .18em;
+            color: var(--or);
+            opacity: .65;
+            margin-bottom: 8px
+        }
+
+        .ati {
+            font-family: var(--display);
+            font-size: .86rem;
+            font-weight: 800;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            color: var(--t);
+            margin-bottom: 5px;
+            line-height: 1.3
+        }
+
+        .aev {
+            font-family: var(--mono);
+            font-size: .54rem;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--t2);
+            margin-bottom: 10px
+        }
+
+        .ab2 {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-family: var(--mono);
+            font-size: .5rem;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            padding: 3px 9px;
+            border: 1px solid var(--orb);
+            color: var(--or);
+            background: var(--ors)
+        }
+
+        /* ── EVENTS ─────────────────────────────────────────── */
+        .el {
+            display: flex;
+            flex-direction: column
+        }
+
+        .ei {
+            display: grid;
+            grid-template-columns: 118px 1fr auto;
+            gap: 26px;
+            align-items: center;
+            padding: 22px 0;
+            border-bottom: 1px solid var(--b);
+            position: relative;
+            transition: padding-left .28s;
+            cursor: default
+        }
+
+        .ei::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--ac);
+            transform: scaleY(0);
+            transform-origin: top;
+            transition: transform .38s var(--ease)
+        }
+
+        .ei:hover::before {
+            transform: scaleY(1)
+        }
+
+        .ei:hover {
+            padding-left: 12px
+        }
+
+        .ed {
+            font-family: var(--mono);
+            font-size: .54rem;
+            letter-spacing: .15em;
+            text-transform: uppercase;
+            color: var(--ac);
+            opacity: .6
+        }
+
+        .en {
+            font-family: var(--display);
+            font-size: .9rem;
+            font-weight: 800;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            color: var(--t);
+            margin-bottom: 3px
+        }
+
+        .edesc {
+            font-size: .78rem;
+            color: var(--t2)
+        }
+
+        .ebg {
+            font-family: var(--mono);
+            font-size: .48rem;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            padding: 4px 10px;
+            border: 1px solid var(--b);
+            color: var(--t3);
+            white-space: nowrap
+        }
+
+        .ebg.up {
+            border-color: var(--acb);
+            color: var(--ac);
+            background: var(--acs)
+        }
+
+        /* ── JOIN ───────────────────────────────────────────── */
+        .join-sec {
+            border-top: 1px solid var(--b);
+            padding: 130px 64px 96px;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+            overflow: hidden
+        }
+
+        .join-amb {
+            position: absolute;
+            bottom: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 560px;
+            height: 260px;
+            background: radial-gradient(ellipse, var(--acs), transparent 70%);
+            pointer-events: none;
+            filter: blur(16px)
+        }
+
+        .join-h {
+            font-family: var(--display);
+            font-weight: 800;
+            font-size: clamp(42px, 6.5vw, 84px);
+            line-height: .92;
+            letter-spacing: -.02em;
+            text-transform: uppercase;
+            margin-bottom: 36px
+        }
+
+        .jw {
+            display: inline-block;
+            overflow: hidden;
+            vertical-align: bottom
+        }
+
+        .ji {
+            display: inline-block;
+            transform: translateY(110%)
+        }
+
+        .ji .aw {
+            color: var(--ac)
+        }
+
+        .join-sub {
+            font-size: .96rem;
+            color: var(--t2);
+            max-width: 420px;
+            margin: 0 auto 36px;
+            line-height: 1.78
+        }
+
+        .join-btns {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap
+        }
+
+        /* ── FOOTER ─────────────────────────────────────────── */
+        footer {
+            padding: 24px 64px;
+            border-top: 1px solid var(--b);
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 16px;
+            position: relative;
+            z-index: 2;
+            background: var(--bg2);
+            transition: background .4s
+        }
+
+        .fl {
+            font-family: var(--display);
+            font-size: .74rem;
+            font-weight: 800;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--t2)
+        }
+
+        .fl em {
+            font-style: normal;
+            color: var(--ac)
+        }
+
+        .fc {
+            font-family: var(--mono);
+            font-size: .5rem;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--t3);
+            text-align: center
+        }
+
+        .fr {
+            display: flex;
+            justify-content: flex-end;
+            gap: 13px
+        }
+
+        .fli {
+            font-family: var(--mono);
+            font-size: .52rem;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--t3);
+            text-decoration: none;
+            transition: color .3s
+        }
+
+        .fli:hover {
+            color: var(--ac)
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="cur"></div>
+    <div id="cur-ring"></div>
+    <div id="spb"></div>
+    <button id="tt" title="Toggle theme">🌙</button>
+
+    <!-- PRELOADER -->
+    <div id="pre">
+        <div class="pre-word" id="preW"><span>I</span><span>G</span><span>I</span><span>T</span></div>
+        <div class="pre-sub">Robotics Club</div>
+        <div class="pre-bar">
+            <div class="pre-fill" id="preF"></div>
+        </div>
+        <div class="pre-pct" id="preN">000</div>
+    </div>
+
+    <!-- NAV -->
+    <nav id="nav">
+        <div class="nav-in">
+            <a href="#" class="nb">
+                <div class="nb-box">
+                    <div class="nb-gem"></div>
+                </div>
+                <div class="nb-txt"><span class="nb-main">IGIT Robotics</span><span class="nb-sub">IGIT Sarang · Est.
+                        2015</span></div>
+            </a>
+            <ul class="nl">
+                <li><a href="#about">About</a></li>
+                <li><a href="#domains">Domains</a></li>
+                <li><a href="#projects">Projects</a></li>
+                <li><a href="#drone">Drone</a></li>
+                <li><a href="#team">Team</a></li>
+                <li><a href="#events">Events</a></li>
+            </ul>
+            <a href="#join" class="nj"><span>Join the Club</span></a>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero" id="home">
+        <canvas id="hero-canvas"></canvas>
+        <div class="hc-tl"></div>
+        <div class="hc-bl"></div>
+        <div class="hero-divider"></div>
+        <!-- LEFT -->
+        <div class="hero-left">
+            <div class="hkick" id="hkick">
+                <span class="kl"></span><span class="kd"></span>
+                <span>Indira Gandhi Institute of Technology, Sarang</span>
+            </div>
+            <h1 class="hero-h" id="hh">
+                <span class="hm"><span class="hl">IGIT</span></span>
+                <span class="hm"><span class="hl"><span class="aw">Robotics</span></span></span>
+                <span class="hm"><span class="hl"><span class="dw">Club</span></span></span>
+            </h1>
+            <p class="hdes" id="hdes">Where <strong>engineering meets imagination</strong>. We design, build, and
+                compete — advancing autonomous systems, machine intelligence, and robotics at IGIT Sarang since 2015.
+            </p>
+            <div class="hbtns" id="hbtns">
+                <a href="#projects" class="bp">Explore Projects →</a>
+                <a href="#join" class="bs">Join the Club</a>
+            </div>
+            <div class="hstat" id="hstat">
+                <div class="hs">
+                    <div class="hs-n"><span class="hc" data-t="9">0</span><span class="hs-s">+</span></div>
+                    <div class="hs-l">Years Active</div>
+                </div>
+                <div class="hs">
+                    <div class="hs-n"><span class="hc" data-t="120">0</span><span class="hs-s">+</span></div>
+                    <div class="hs-l">Members</div>
+                </div>
+                <div class="hs">
+                    <div class="hs-n"><span class="hc" data-t="40">0</span><span class="hs-s">+</span></div>
+                    <div class="hs-l">Projects</div>
+                </div>
+                <div class="hs">
+                    <div class="hs-n"><span class="hc" data-t="25">0</span><span class="hs-s">+</span></div>
+                    <div class="hs-l">Awards</div>
+                </div>
+            </div>
+            <div class="hscr" id="hscr">
+                <div class="scs"></div><span class="scl">Scroll</span>
+            </div>
+        </div>
+        <!-- RIGHT: Drone canvas -->
+        <div class="hero-right">
+            <div class="dhud" id="dhud">
+                <div>SYS &nbsp;<span>ONLINE</span></div>
+                <div>MEMBERS &nbsp;<span>120+</span></div>
+                <div>ACTIVE &nbsp;<span>08 PROJECTS</span></div>
+                <div>NEXT &nbsp;<span>ROBOCON 2025</span></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MARQUEE -->
+    <div class="mq-wrap">
+        <div class="mq-row" id="mq1">
+            <div class="mq-i">Autonomous Robotics<span class="mq-s"></span></div>
+            <div class="mq-i">Computer Vision<span class="mq-s"></span></div>
+            <div class="mq-i">ROS2<span class="mq-s"></span></div>
+            <div class="mq-i">Arduino & Raspberry Pi<span class="mq-s"></span></div>
+            <div class="mq-i">Machine Learning<span class="mq-s"></span></div>
+            <div class="mq-i">3D Printing<span class="mq-s"></span></div>
+            <div class="mq-i">PCB Design<span class="mq-s"></span></div>
+            <div class="mq-i">Drone Tech<span class="mq-s"></span></div>
+            <div class="mq-i">Autonomous Robotics<span class="mq-s"></span></div>
+            <div class="mq-i">Computer Vision<span class="mq-s"></span></div>
+            <div class="mq-i">ROS2<span class="mq-s"></span></div>
+            <div class="mq-i">Arduino & Raspberry Pi<span class="mq-s"></span></div>
+            <div class="mq-i">Machine Learning<span class="mq-s"></span></div>
+            <div class="mq-i">3D Printing<span class="mq-s"></span></div>
+            <div class="mq-i">PCB Design<span class="mq-s"></span></div>
+            <div class="mq-i">Drone Tech<span class="mq-s"></span></div>
+        </div>
+        <div class="mq-row" id="mq2" style="margin-top:6px">
+            <div class="mq-i hi">Robocon India<span class="mq-s"></span></div>
+            <div class="mq-i hi">TechFest IIT Bombay<span class="mq-s"></span></div>
+            <div class="mq-i hi">e-Yantra<span class="mq-s"></span></div>
+            <div class="mq-i hi">Smart India Hackathon<span class="mq-s"></span></div>
+            <div class="mq-i hi">NIT Rourkela<span class="mq-s"></span></div>
+            <div class="mq-i hi">ABU Robocon<span class="mq-s"></span></div>
+            <div class="mq-i hi">Robocon India<span class="mq-s"></span></div>
+            <div class="mq-i hi">TechFest IIT Bombay<span class="mq-s"></span></div>
+            <div class="mq-i hi">e-Yantra<span class="mq-s"></span></div>
+            <div class="mq-i hi">Smart India Hackathon<span class="mq-s"></span></div>
+            <div class="mq-i hi">NIT Rourkela<span class="mq-s"></span></div>
+            <div class="mq-i hi">ABU Robocon<span class="mq-s"></span></div>
+        </div>
+    </div>
+
+    <!-- ABOUT -->
+    <section class="section" id="about">
+        <div class="si">
+            <div class="sec-ey"><span class="sec-en">01</span><span class="sec-el"></span><span>About Us</span></div>
+            <div class="ag">
+                <div>
+                    <h2 class="sh">Building the <span class="aw">future</span><br>of automation</h2>
+                    <p class="abp">IGIT Robotics is the technical flagship club of <strong>Indira Gandhi Institute of
+                            Technology, Sarang</strong>. Since 2015, we've united students passionate about robotics,
+                        automation, and intelligent systems.</p>
+                    <p class="abp">From Arduino-based line followers to full autonomous SLAM-navigation platforms, our
+                        members tackle real engineering challenges guided by faculty mentors and industry advisors.</p>
+                    <div class="pillars">
+                        <div class="pillar"><span class="pn">01</span>
+                            <div>
+                                <div class="pt">Hands-on Learning</div>
+                                <div class="pd">Every member gets workshop access, hardware, and 1-on-1 mentorship from
+                                    day one.</div>
+                            </div>
+                        </div>
+                        <div class="pillar"><span class="pn">02</span>
+                            <div>
+                                <div class="pt">National Competitions</div>
+                                <div class="pd">We represent IGIT at Robocon, TechFest IIT Bombay, e-Yantra, SIH, and
+                                    more.</div>
+                            </div>
+                        </div>
+                        <div class="pillar"><span class="pn">03</span>
+                            <div>
+                                <div class="pt">Research &amp; Innovation</div>
+                                <div class="pd">Student-led R&amp;D with faculty collaboration, open-source
+                                    contributions, and industry sponsors.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="term" id="terminal">
+                        <div class="term-bar"><span class="td r"></span><span class="td y"></span><span
+                                class="td g"></span><span class="ttl">igit_robotics — info.sh</span></div>
+                        <div class="term-body">
+                            <div class="tl" id="tl1"><span class="tp">$</span><span class="tc">./status --verbose</span>
+                            </div>
+                            <div class="tl" id="tl2"><span class="to">Club: IGIT Robotics Club</span></div>
+                            <div class="tl" id="tl3"><span class="to">Institute: IGIT Sarang, Odisha</span></div>
+                            <div class="tl" id="tl4"><span class="to">Founded: 2015 | Members: 120+</span></div>
+                            <div class="tl" id="tl5"><span class="tp">$</span><span class="tc">./list-domains</span>
+                            </div>
+                            <div class="tl" id="tl6"><span class="to">[1] Autonomous Navigation</span></div>
+                            <div class="tl" id="tl7"><span class="to">[2] Computer Vision & AI</span></div>
+                            <div class="tl" id="tl8"><span class="to">[3] Embedded Systems</span></div>
+                            <div class="tl" id="tl9"><span class="to">[4] Drone Technology</span></div>
+                            <div class="tl" id="tl10"><span class="to">[5] Competitive Robotics</span></div>
+                            <div class="tl" id="tl11"><span class="tp">$</span><span class="tc">./achievements</span>
+                            </div>
+                            <div class="tl" id="tl12"><span class="to">25+ Awards | 3 National Podiums</span></div>
+                            <div class="tl" id="tl13"><span class="tp">$</span><span class="tcr"></span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- DOMAINS -->
+    <section class="section" id="domains">
+        <div class="si">
+            <div class="sec-ey"><span class="sec-en">02</span><span class="sec-el"></span><span>What We Build</span>
+            </div>
+            <h2 class="sh">Our <span class="aw">Technical</span> Domains</h2>
+            <div class="dg">
+                <div class="dc">
+                    <div class="dc-n">01</div><span class="dc-ic">🤖</span>
+                    <div class="dc-name">Autonomous Robotics</div>
+                    <div class="dc-desc">Path planning, SLAM, obstacle avoidance — robots that navigate the world
+                        without human input.</div>
+                    <div class="dc-tags"><span class="dtag">ROS2</span><span class="dtag">SLAM</span><span
+                            class="dtag">LiDAR</span><span class="dtag">Python</span></div>
+                </div>
+                <div class="dc">
+                    <div class="dc-n">02</div><span class="dc-ic">👁</span>
+                    <div class="dc-name">Computer Vision & AI</div>
+                    <div class="dc-desc">Object detection, tracking, and deep learning on edge hardware for real-time
+                        perception.</div>
+                    <div class="dc-tags"><span class="dtag">OpenCV</span><span class="dtag">YOLO</span><span
+                            class="dtag">PyTorch</span><span class="dtag">RPi</span></div>
+                </div>
+                <div class="dc">
+                    <div class="dc-n">03</div><span class="dc-ic">⚡</span>
+                    <div class="dc-name">Embedded Systems</div>
+                    <div class="dc-desc">PCB design, firmware development, and low-level hardware programming for custom
+                        controllers.</div>
+                    <div class="dc-tags"><span class="dtag">Arduino</span><span class="dtag">STM32</span><span
+                            class="dtag">KiCad</span><span class="dtag">C++</span></div>
+                </div>
+                <div class="dc">
+                    <div class="dc-n">04</div><span class="dc-ic">🚁</span>
+                    <div class="dc-name">Drone Technology</div>
+                    <div class="dc-desc">UAV design, autonomous flight control, and aerial mapping with live telemetry
+                        systems.</div>
+                    <div class="dc-tags"><span class="dtag">Pixhawk</span><span class="dtag">MAVLink</span><span
+                            class="dtag">GPS</span><span class="dtag">FPV</span></div>
+                </div>
+                <div class="dc">
+                    <div class="dc-n">05</div><span class="dc-ic">🏆</span>
+                    <div class="dc-name">Competitive Robotics</div>
+                    <div class="dc-desc">Building for Robocon, ABU, TechFest IIT, and e-Yantra national competitions.
+                    </div>
+                    <div class="dc-tags"><span class="dtag">Robocon</span><span class="dtag">ABU</span><span
+                            class="dtag">e-Yantra</span></div>
+                </div>
+                <div class="dc">
+                    <div class="dc-n">06</div><span class="dc-ic">🖨</span>
+                    <div class="dc-name">Rapid Prototyping</div>
+                    <div class="dc-desc">3D printing, CNC, and laser cutting for fast hardware iteration and custom
+                        fabrication.</div>
+                    <div class="dc-tags"><span class="dtag">3D Print</span><span class="dtag">Fusion 360</span><span
+                            class="dtag">SolidWorks</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PROJECTS -->
+    <section class="proj-sec" id="projects">
+        <div class="proj-head">
+            <div>
+                <div class="sec-ey" style="margin-bottom:12px"><span class="sec-en">03</span><span
+                        class="sec-el"></span><span>Featured Projects</span></div>
+                <h2 class="sh" style="margin-bottom:0">What We've <span class="aw">Built</span></h2>
+            </div>
+            <div class="proj-big">05</div>
+        </div>
+        <div class="proj-scr">
+            <div class="proj-track">
+                <div class="pc p1">
+                    <div class="pc-bar"></div>
+                    <div class="pc-pat"></div>
+                    <div class="pc-con"><span class="pc-cat">Autonomous Nav</span>
+                        <div class="pc-sp"></div>
+                        <div class="pc-st"><span class="pc-sd"></span>Active</div>
+                        <div class="pc-name">IGIT Navigator</div>
+                        <div class="pc-desc">Autonomous ground vehicle with SLAM-based navigation, LiDAR obstacle
+                            detection, and ROS2 integration.</div>
+                        <div class="pc-foot"><span class="pc-stack">ROS2 · LiDAR · Python</span><a href="#"
+                                class="pc-lnk">→</a></div>
+                    </div>
+                </div>
+                <div class="pc p2">
+                    <div class="pc-bar"></div>
+                    <div class="pc-pat"></div>
+                    <div class="pc-con"><span class="pc-cat">Computer Vision</span>
+                        <div class="pc-sp"></div>
+                        <div class="pc-st"><span class="pc-sd"></span>Deployed</div>
+                        <div class="pc-name">Vision Bot</div>
+                        <div class="pc-desc">Real-time YOLO v8 object detection on Raspberry Pi 5 running at 30fps with
+                            autonomous tracking.</div>
+                        <div class="pc-foot"><span class="pc-stack">YOLO · RPi · OpenCV</span><a href="#"
+                                class="pc-lnk">→</a></div>
+                    </div>
+                </div>
+                <div class="pc p3">
+                    <div class="pc-bar"></div>
+                    <div class="pc-pat"></div>
+                    <div class="pc-con"><span class="pc-cat">Competition</span>
+                        <div class="pc-sp"></div>
+                        <div class="pc-st"><span class="pc-sd"></span>Competition Ready</div>
+                        <div class="pc-name">Robocon Bot '24</div>
+                        <div class="pc-desc">Precision throwing robot with pneumatic actuation and CV-guided aiming for
+                            Robocon 2024.</div>
+                        <div class="pc-foot"><span class="pc-stack">STM32 · Pneumatics · CV</span><a href="#"
+                                class="pc-lnk">→</a></div>
+                    </div>
+                </div>
+                <div class="pc p4">
+                    <div class="pc-bar"></div>
+                    <div class="pc-pat"></div>
+                    <div class="pc-con"><span class="pc-cat">Drone</span>
+                        <div class="pc-sp"></div>
+                        <div class="pc-st"><span class="pc-sd"></span>In Testing</div>
+                        <div class="pc-name">IGIT Aerial</div>
+                        <div class="pc-desc">Custom hexacopter UAV for aerial mapping, autonomous waypoint navigation,
+                            and live telemetry.</div>
+                        <div class="pc-foot"><span class="pc-stack">Pixhawk · MAVLink · GPS</span><a href="#"
+                                class="pc-lnk">→</a></div>
+                    </div>
+                </div>
+                <div class="pc p5">
+                    <div class="pc-bar"></div>
+                    <div class="pc-pat"></div>
+                    <div class="pc-con"><span class="pc-cat">Embedded</span>
+                        <div class="pc-sp"></div>
+                        <div class="pc-st"><span class="pc-sd"></span>Open Source</div>
+                        <div class="pc-name">Robo Shield</div>
+                        <div class="pc-desc">Custom STM32 robotics control board with motor drivers, IMU, and wireless
+                            communications.</div>
+                        <div class="pc-foot"><span class="pc-stack">STM32 · KiCad · C++</span><a href="#"
+                                class="pc-lnk">→</a></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3D ROVER SECTION -->
+    <section class="drone-sec" id="drone">
+        <div class="drone-left">
+            <div class="sec-ey"><span class="sec-en">04</span><span class="sec-el"></span><span>Flagship Platform</span>
+            </div>
+            <div class="drone-badge"><span class="drone-badge-dot"></span>Active Development</div>
+            <h2 class="sh" style="margin-bottom:20px">IGIT <span class="aw">Ground</span><br>Rover MK-II</h2>
+            <p class="abp">Our autonomous 4-wheel rover built for rough terrain navigation. Equipped with LiDAR, an
+                RGB-D camera, and ROS2-based SLAM. Drive it yourself using the interactive demo.</p>
+            <div class="drone-specs">
+                <div class="ds-row"><span class="ds-lbl">Chassis</span><span class="ds-val">Aluminium 6061-T6</span>
+                </div>
+                <div class="ds-row"><span class="ds-lbl">Drive System</span><span class="ds-val">4WD Differential</span>
+                </div>
+                <div class="ds-row"><span class="ds-lbl">Controller</span><span class="ds-val">Raspberry Pi 5 +
+                        STM32</span></div>
+                <div class="ds-row"><span class="ds-lbl">Sensors</span><span class="ds-val">LiDAR + RGB-D Camera</span>
+                </div>
+                <div class="ds-row"><span class="ds-lbl">Navigation</span><span class="ds-val">ROS2 SLAM + GPS</span>
+                </div>
+                <div class="ds-row"><span class="ds-lbl">Max Speed</span><span class="ds-val">1.2 m/s</span></div>
+            </div>
+
+            <!-- DRIVE CONTROLS -->
+            <div class="rover-controls" id="roverControls">
+                <button class="rover-play-btn" id="roverPlayBtn">
+                    <span class="rpb-icon">▶</span>
+                    <span class="rpb-txt">Drive the Rover</span>
+                </button>
+                <div class="rover-keys" id="roverKeys" style="display:none">
+                    <div class="rk-hint">Use keyboard to drive</div>
+                    <div class="rk-grid">
+                        <div class="rk-row">
+                            <div class="rk-key" id="kW">W</div>
+                        </div>
+                        <div class="rk-row">
+                            <div class="rk-key" id="kA">A</div>
+                            <div class="rk-key" id="kS">S</div>
+                            <div class="rk-key" id="kD">D</div>
+                        </div>
+                    </div>
+                    <div class="rover-speed-wrap">
+                        <span class="rover-speed-lbl">SPEED</span>
+                        <div class="rover-speed-bar">
+                            <div class="rover-speed-fill" id="roverSpeedFill"></div>
+                        </div>
+                        <span class="rover-speed-val" id="roverSpeedVal">0.0 m/s</span>
+                    </div>
+                    <button class="rover-stop-btn" id="roverStopBtn">■ Stop</button>
+                </div>
+            </div>
+        </div>
+        <div class="drone-right"><canvas id="drone-canvas"></canvas></div>
+    </section>
+
+    <!-- MANIFESTO -->
+    <section class="man-sec">
+        <div class="man-sp">
+            <div class="man-st">
+                <p class="man-txt" id="manTxt">
+                    <span class="mw">We</span> <span class="mw">don't</span> <span class="mw">just</span>
+                    <span class="mw">study</span> <span class="mw">engineering.</span>
+                    <span class="mw">We</span> <span class="mw">live</span> <span class="mw">it.</span>
+                    <span class="mw">Every</span> <span class="mw">circuit</span> <span class="mw">we</span>
+                    <span class="mw">design,</span> <span class="mw">every</span> <span class="mw">bot</span>
+                    <span class="mw">we</span> <span class="mw">build,</span>
+                    <span class="mw">is</span> <span class="mw">a</span> <span class="mw">step</span>
+                    <span class="mw">towards</span> <span class="mw">the</span> <span class="mw">future.</span>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- TEAM -->
+    <section class="section" id="team">
+        <div class="si">
+            <div class="sec-ey"><span class="sec-en">05</span><span class="sec-el"></span><span>Core Team</span></div>
+            <h2 class="sh">The minds <span class="aw">behind</span> the machines</h2>
+            <div class="tg">
+                <div class="tc2">
+                    <div class="ta">PP</div>
+                    <div class="tname">Priyankar P.</div>
+                    <div class="trole">President</div>
+                    <div class="tdesc">Autonomous systems & ROS2 specialist. Led team to 3 national podiums.</div>
+                </div>
+                <div class="tc2">
+                    <div class="ta">AK</div>
+                    <div class="tname">Aman Kumar</div>
+                    <div class="trole">VP — Hardware</div>
+                    <div class="tdesc">PCB design & embedded firmware expert. Designed IGIT's custom motor controller
+                        board.</div>
+                </div>
+                <div class="tc2">
+                    <div class="ta">SR</div>
+                    <div class="tname">Sneha Rout</div>
+                    <div class="trole">VP — Software</div>
+                    <div class="tdesc">Computer vision & deep learning lead. Architected the real-time perception
+                        pipeline.</div>
+                </div>
+                <div class="tc2">
+                    <div class="ta">RD</div>
+                    <div class="tname">Rahul Das</div>
+                    <div class="trole">Lead — Drones</div>
+                    <div class="tdesc">UAV design and autonomous flight systems. Pixhawk certified, FPV race competitor.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ACHIEVEMENTS -->
+    <section class="section">
+        <div class="si">
+            <div class="sec-ey"><span class="sec-en">06</span><span class="sec-el"></span><span>Achievements</span>
+            </div>
+            <h2 class="sh">Competing at the <span class="aw">National</span> level</h2>
+            <div class="ach-g">
+                <div class="ac2">
+                    <div class="ay">2024</div>
+                    <div class="ati">Robocon India — Regional Finalist</div>
+                    <div class="aev">ABU Robocon 2024 · National Stage</div>
+                    <div class="ab2">🏆 Top 16 Nationally</div>
+                </div>
+                <div class="ac2">
+                    <div class="ay">2023</div>
+                    <div class="ati">TechFest IIT Bombay — 2nd Place</div>
+                    <div class="aev">Autonomous Navigation Challenge</div>
+                    <div class="ab2">🥈 Silver Medal</div>
+                </div>
+                <div class="ac2">
+                    <div class="ay">2023</div>
+                    <div class="ati">Smart India Hackathon — Finalist</div>
+                    <div class="aev">Ministry of Education · Hardware</div>
+                    <div class="ab2">🎖 SIH Hardware</div>
+                </div>
+                <div class="ac2">
+                    <div class="ay">2022</div>
+                    <div class="ati">e-Yantra IIT Bombay — Theme Win</div>
+                    <div class="aev">e-Yantra Robotics Competition</div>
+                    <div class="ab2">🥇 Theme Champion</div>
+                </div>
+                <div class="ac2">
+                    <div class="ay">2022</div>
+                    <div class="ati">NIT Rourkela — Best Design</div>
+                    <div class="aev">Robotics Olympiad · Eastern India</div>
+                    <div class="ab2">🎨 Best Design Award</div>
+                </div>
+                <div class="ac2">
+                    <div class="ay">2021</div>
+                    <div class="ati">Robocon India — Qualifiers</div>
+                    <div class="aev">DD Robocon India Qualifier Round</div>
+                    <div class="ab2">✅ National Qualifier</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- EVENTS -->
+    <section class="section" id="events">
+        <div class="si">
+            <div class="sec-ey"><span class="sec-en">07</span><span class="sec-el"></span><span>Events &
+                    Workshops</span></div>
+            <h2 class="sh">Upcoming &amp; <span class="aw">Past</span> Events</h2>
+            <div class="el">
+                <div class="ei">
+                    <div class="ed">Jan 2025</div>
+                    <div>
+                        <div class="en">Robocon 2025 Team Trials</div>
+                        <div class="edesc">Internal selection for Robocon 2025. Open to all IGIT students.</div>
+                    </div><span class="ebg up">Upcoming</span>
+                </div>
+                <div class="ei">
+                    <div class="ed">Dec 2024</div>
+                    <div>
+                        <div class="en">Winter Robotics Bootcamp</div>
+                        <div class="edesc">3-day intensive on ROS2, autonomous navigation, and sensor integration.</div>
+                    </div><span class="ebg up">Register Open</span>
+                </div>
+                <div class="ei">
+                    <div class="ed">Oct 2024</div>
+                    <div>
+                        <div class="en">ROBO IGIT 2024 — Annual Fest</div>
+                        <div class="edesc">IGIT's flagship robotics festival with 20+ events and 400+ participants.
+                        </div>
+                    </div><span class="ebg">Completed</span>
+                </div>
+                <div class="ei">
+                    <div class="ed">Sep 2024</div>
+                    <div>
+                        <div class="en">PCB Design Workshop</div>
+                        <div class="edesc">KiCad, Gerber files, and ordering custom PCBs for robotics projects.</div>
+                    </div><span class="ebg">Completed</span>
+                </div>
+                <div class="ei">
+                    <div class="ed">Aug 2024</div>
+                    <div>
+                        <div class="en">New Member Induction 2024–25</div>
+                        <div class="edesc">Welcome batch of 45 new members. Arduino basics and team allocation.</div>
+                    </div><span class="ebg">Completed</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- JOIN -->
+    <section class="join-sec" id="join">
+        <div class="join-amb"></div>
+        <div class="sec-ey" style="justify-content:center;margin-bottom:20px"><span class="sec-en">08</span><span
+                class="sec-el"></span><span>Join the Club</span></div>
+        <h2 class="join-h" id="joinH">
+            <span class="jw"><span class="ji">Build</span></span>&nbsp;
+            <span class="jw"><span class="ji">the</span></span>&nbsp;
+            <span class="jw"><span class="ji"><span class="aw">future</span></span></span><br>
+            <span class="jw"><span class="ji">with</span></span>&nbsp;
+            <span class="jw"><span class="ji">us</span></span>
+        </h2>
+        <p class="join-sub">Applications open every semester. No prior robotics experience needed — just curiosity and a
+            drive to build things that move.</p>
+        <div class="join-btns">
+            <a href="mailto:igitrobotics@igit.ac.in" class="bp">Apply Now →</a>
+            <a href="mailto:igitrobotics@igit.ac.in" class="bs">✉ igitrobotics@igit.ac.in</a>
+        </div>
+    </section>
+
+    <footer>
+        <div class="fl">IGIT <em>Robotics</em></div>
+        <div class="fc">
+            <div>Indira Gandhi Institute of Technology, Sarang, Odisha</div>
+            <div style="margin-top:2px;opacity:.5">© 2024 · All rights reserved</div>
+        </div>
+        <div class="fr">
+            <a href="#" class="fli">Instagram</a>
+            <a href="#" class="fli">LinkedIn</a>
+            <a href="#" class="fli">GitHub</a>
+        </div>
+    </footer>
+
+    <script>
+        gsap.registerPlugin(ScrollTrigger, CustomEase);
+        CustomEase.create('expo', 'M0,0 C0.16,1 0.3,1 1,1');
+
+        /* ── THEME ─────────────────────────────────────────── */
+        const htmlEl = document.documentElement;
+        let theme = 'dark';
+        document.getElementById('tt').addEventListener('click', () => {
+            theme = theme === 'dark' ? 'light' : 'dark';
+            htmlEl.setAttribute('data-theme', theme);
+            document.getElementById('tt').textContent = theme === 'dark' ? '🌙' : '☀️';
+            if (window._themeUpdate) window._themeUpdate(theme);
+        });
+
+        /* ── CURSOR ────────────────────────────────────────── */
+        const cur = document.getElementById('cur'), ring = document.getElementById('cur-ring');
+        let mx = 0, my = 0, rx = 0, ry = 0;
+        const TLEN = 8, trail = Array.from({ length: TLEN }, (_, i) => {
+            const el = document.createElement('div'); el.className = 'tpt';
+            const s = 1 - i / TLEN; el.style.cssText = `width:${s * 3.2}px;height:${s * 3.2}px;opacity:${s * .28}`;
+            document.body.appendChild(el); return { el, x: 0, y: 0 };
+        });
+        window.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY });
+        (function loop() {
+            rx += (mx - rx) * .13; ry += (my - ry) * .13;
+            cur.style.left = mx + 'px'; cur.style.top = my + 'px';
+            ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+            trail[0].x += (mx - trail[0].x) * .28; trail[0].y += (my - trail[0].y) * .28;
+            for (let i = 1; i < TLEN; i++) { trail[i].x += (trail[i - 1].x - trail[i].x) * .32; trail[i].y += (trail[i - 1].y - trail[i].y) * .32 }
+            trail.forEach(t => { t.el.style.left = t.x + 'px'; t.el.style.top = t.y + 'px' });
+            requestAnimationFrame(loop);
+        })();
+        document.querySelectorAll('a,button,.dc,.pc,.tc2,.ac2,.ei,.pillar').forEach(el => {
+            el.addEventListener('mouseenter', () => document.body.classList.add('ch'));
+            el.addEventListener('mouseleave', () => document.body.classList.remove('ch'));
+        });
+
+        /* ── SCROLL PROGRESS ───────────────────────────────── */
+        ScrollTrigger.create({
+            start: 'top top', end: 'bottom bottom',
+            onUpdate: s => gsap.set('#spb', { scaleX: s.progress, transformOrigin: 'left' })
+        });
+
+        /* ── NAV ───────────────────────────────────────────── */
+        const navEl = document.getElementById('nav');
+        window.addEventListener('scroll', () => navEl.classList.toggle('sc', scrollY > 60));
+        ScrollTrigger.create({
+            start: 'top top', end: 'bottom bottom',
+            onUpdate: s => {
+                if (s.getVelocity() > 260) gsap.to(navEl, { y: -68, duration: .3, ease: 'power2.in' });
+                else if (s.getVelocity() < -80) gsap.to(navEl, { y: 0, duration: .35, ease: 'power2.out' });
+            }
+        });
+
+        /* ── PRELOADER ─────────────────────────────────────── */
+        const pL = document.querySelectorAll('#preW span'), pF = document.getElementById('preF'), pN = document.getElementById('preN'), pO = { v: 0 };
+        gsap.timeline({
+            onComplete: () => {
+                gsap.to('#pre', {
+                    yPercent: -100, duration: 1, ease: 'power4.inOut', delay: .15,
+                    onComplete: () => { const p = document.getElementById('pre'); if (p) p.remove() }
+                });
+                gsap.to(navEl, { opacity: 1, duration: .5, delay: .32 });
+            }
+        })
+            .to(pL, { y: '0%', duration: .82, stagger: .05, ease: 'power4.out' })
+            .to(pO, {
+                v: 100, duration: 1.4, ease: 'power2.inOut',
+                onUpdate: () => { pN.textContent = String(Math.round(pO.v)).padStart(3, '0'); gsap.set(pF, { width: pO.v + '%' }) }
+            }, '-=.28')
+            .to(pL, { rotationX: 90, opacity: 0, duration: .4, stagger: .025, ease: 'power2.in' }, '-=.1');
+
+        /* ── HERO ENTRANCE ─────────────────────────────────── */
+        gsap.timeline({ delay: 2.3 })
+            .to('.hl', { y: '0%', duration: 1.08, stagger: .1, ease: 'expo' })
+            .to('#hkick', { opacity: 1, y: 0, duration: .7, ease: 'power3.out' }, '-=.72')
+            .to('#hdes', { opacity: 1, y: 0, duration: .7, ease: 'power3.out' }, '-=.55')
+            .to('#hbtns', { opacity: 1, y: 0, duration: .65, ease: 'power3.out' }, '-=.45')
+            .to('#hstat', { opacity: 1, y: 0, duration: .6, ease: 'power3.out' }, '-=.4')
+            .to('#hscr', { opacity: 1, duration: .5 }, '-=.3')
+            .to('#dhud', { opacity: 1, x: 0, duration: .6, ease: 'power3.out' }, '-=.55');
+        gsap.to('.hero-h', {
+            yPercent: 18, opacity: 0, ease: 'none',
+            scrollTrigger: { trigger: '.hero', start: 'center top', end: 'bottom top', scrub: 1 }
+        });
+
+        /* ── HERO COUNTERS ─────────────────────────────────── */
+        document.querySelectorAll('.hc').forEach(el => {
+            const o = { v: 0 };
+            gsap.to(o, {
+                v: parseInt(el.dataset.t), duration: 1.8, ease: 'power3.out',
+                onUpdate: () => el.textContent = Math.round(o.v),
+                scrollTrigger: { trigger: el, start: 'top 82%', once: true }
+            });
+        });
+
+        /* ── MARQUEE ───────────────────────────────────────── */
+        const mq1a = gsap.to('#mq1', { x: '-50%', duration: 22, ease: 'none', repeat: -1 });
+        const mq2a = gsap.fromTo('#mq2', { x: '-50%' }, { x: '0%', duration: 28, ease: 'none', repeat: -1 });
+        ScrollTrigger.create({
+            trigger: '.mq-wrap', start: 'top bottom', end: 'bottom top',
+            onUpdate: s => {
+                const v = s.getVelocity(), t = gsap.utils.clamp(.1, 2.8, 1 + v * .00022);
+                gsap.to(mq1a, { timeScale: t, duration: .5 });
+                gsap.to(mq2a, { timeScale: Math.max(.1, 2 - t), duration: .5 });
+            }
+        });
+
+        /* ── SECTION EYEBROWS ──────────────────────────────── */
+        document.querySelectorAll('.sec-ey').forEach(el => {
+            gsap.from(el, {
+                x: -16, opacity: 0, duration: .58, ease: 'power3.out',
+                scrollTrigger: { trigger: el, start: 'top 92%', once: true }
+            });
+        });
+
+        /* ── HEADING WORD REVEALS ──────────────────────────── */
+        document.querySelectorAll('.sh').forEach(el => {
+            const raw = el.innerHTML.split(/(<[^>]+>|\s+)/);
+            el.innerHTML = raw.map(c => /^</.test(c) || /^\s+$/.test(c) ? c :
+                `<span style="display:inline-block;overflow:hidden;vertical-align:bottom"><span class="wr" style="display:inline-block;transform:translateY(110%)">${c}</span></span>`
+            ).join('');
+            gsap.to(el.querySelectorAll('.wr'), {
+                y: '0%', duration: .88, stagger: .055, ease: 'expo',
+                scrollTrigger: { trigger: el, start: 'top 87%', once: true }
+            });
+        });
+
+        /* ── ABOUT ─────────────────────────────────────────── */
+        document.querySelectorAll('.pillar').forEach((item, i) => {
+            gsap.from(item, {
+                x: -20, opacity: 0, duration: .68, delay: i * .07, ease: 'power3.out',
+                scrollTrigger: { trigger: item, start: 'top 88%', once: true }
+            });
+        });
+        document.querySelectorAll('.abp').forEach(p => {
+            gsap.from(p, {
+                y: 14, opacity: 0, duration: .65, ease: 'power3.out',
+                scrollTrigger: { trigger: p, start: 'top 90%', once: true }
+            });
+        });
+        ScrollTrigger.create({
+            trigger: '#terminal', start: 'top 76%', once: true,
+            onEnter: () => document.querySelectorAll('.tl').forEach((l, i) =>
+                gsap.to(l, { opacity: 1, x: 0, duration: .32, delay: i * .09, ease: 'power2.out' }))
+        });
+
+        /* ── DOMAINS ───────────────────────────────────────── */
+        document.querySelectorAll('.dc').forEach((c, i) => {
+            gsap.from(c, {
+                y: 36, opacity: 0, duration: .7, delay: (i % 3) * .065, ease: 'power3.out',
+                scrollTrigger: { trigger: c, start: 'top 87%', once: true }
+            });
+        });
+
+        /* ── PROJECTS (card tilt only, scroll is CSS) ──────── */
+        document.querySelectorAll('.pc').forEach((c, i) => {
+            gsap.from(c, {
+                y: 48, opacity: 0, scale: .94, duration: .82, delay: i * .06, ease: 'power3.out',
+                scrollTrigger: { trigger: '.proj-sec', start: 'top 80%', once: true }
+            });
+            c.addEventListener('mousemove', e => {
+                const r = c.getBoundingClientRect();
+                gsap.to(c, {
+                    rotationY: (e.clientX - r.left - r.width / 2) / r.width * 10,
+                    rotationX: -(e.clientY - r.top - r.height / 2) / r.height * 10,
+                    duration: .3, ease: 'power2.out', transformPerspective: 900
+                });
+            });
+            c.addEventListener('mouseleave', () => gsap.to(c, { rotationY: 0, rotationX: 0, duration: .75, ease: 'elastic.out(1,.4)' }));
+        });
+
+        /* ── DRONE SECTION ENTRANCE ────────────────────────── */
+        gsap.from('.drone-left>*', {
+            y: 26, opacity: 0, duration: .7, stagger: .09, ease: 'power3.out',
+            scrollTrigger: { trigger: '.drone-left', start: 'top 80%', once: true }
+        });
+        gsap.from('.ds-row', {
+            x: -16, opacity: 0, duration: .55, stagger: .065, ease: 'power3.out',
+            scrollTrigger: { trigger: '.drone-specs', start: 'top 84%', once: true }
+        });
+
+        /* ── MANIFESTO (CSS sticky, GSAP only for word reveal) */
+        const mwords = document.querySelectorAll('.mw');
+        gsap.set(mwords, { opacity: .07 });
+        ScrollTrigger.create({
+            trigger: '.man-sec', start: 'top top', end: 'bottom bottom', scrub: true,
+            onUpdate: s => {
+                mwords.forEach((w, i) => {
+                    const p = (s.progress * mwords.length) - i;
+                    const o = gsap.utils.clamp(.07, 1, p * 1.65);
+                    w.style.opacity = o;
+                    if (o > .88) w.classList.add('lit'); else w.classList.remove('lit');
+                });
+            }
+        });
+
+        /* ── TEAM ──────────────────────────────────────────── */
+        document.querySelectorAll('.tc2').forEach((c, i) => {
+            gsap.from(c, {
+                y: 30, opacity: 0, duration: .68, delay: i * .055, ease: 'power3.out',
+                scrollTrigger: { trigger: c, start: 'top 87%', once: true }
+            });
+        });
+
+        /* ── ACHIEVEMENTS ──────────────────────────────────── */
+        document.querySelectorAll('.ac2').forEach((c, i) => {
+            gsap.from(c, {
+                rotationX: -15, y: 26, opacity: 0, duration: .72, delay: (i % 3) * .06,
+                transformOrigin: 'top center', ease: 'back.out(1.2)',
+                scrollTrigger: { trigger: c, start: 'top 86%', once: true }
+            });
+        });
+
+        /* ── EVENTS ────────────────────────────────────────── */
+        document.querySelectorAll('.ei').forEach((item, i) => {
+            gsap.from(item, {
+                x: -20, opacity: 0, duration: .62, delay: i * .055, ease: 'power3.out',
+                scrollTrigger: { trigger: item, start: 'top 88%', once: true }
+            });
+        });
+
+        /* ── JOIN ──────────────────────────────────────────── */
+        const jfi = document.querySelectorAll('#joinH .ji');
+        gsap.set(jfi, { rotationX: -90, opacity: 0, transformOrigin: 'bottom center' });
+        gsap.to(jfi, {
+            rotationX: 0, opacity: 1, duration: .72, stagger: .07, ease: 'back.out(1.3)',
+            scrollTrigger: { trigger: '#joinH', start: 'top 85%', once: true }
+        });
+        gsap.from('.join-sub,.join-btns', {
+            y: 16, opacity: 0, duration: .6, stagger: .1, ease: 'power3.out',
+            scrollTrigger: { trigger: '.join-sub', start: 'top 90%', once: true }
+        });
+        gsap.to('.join-amb', {
+            y: -38, ease: 'none',
+            scrollTrigger: { trigger: '.join-sec', start: 'top bottom', end: 'bottom top', scrub: 1.2 }
+        });
+
+        /* ── FOOTER ────────────────────────────────────────── */
+        gsap.from('footer>*', {
+            y: 10, opacity: 0, duration: .55, stagger: .1, ease: 'power3.out',
+            scrollTrigger: { trigger: 'footer', start: 'top 96%', once: true }
+        });
+
+        /* ══════════════════════════════════════════════════════
+           THREE.JS — wrapped safely, runs after full page load
+        ══════════════════════════════════════════════════════ */
+        window.addEventListener('load', function () {
+
+            /* ── HERO DRONE (right column) ───────────────────── */
+            try {
+                (function () {
+                    const cv = document.getElementById('hero-canvas');
+                    const heroSection = cv.parentElement;
+                    const W = () => Math.max(heroSection.offsetWidth, 100);
+                    const H = () => Math.max(heroSection.offsetHeight, 100);
+
+                    const renderer = new THREE.WebGLRenderer({ canvas: cv, alpha: true, antialias: true });
+                    renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+                    renderer.setSize(W(), H());
+                    renderer.shadowMap.enabled = true;
+
+                    const scene = new THREE.Scene();
+                    const camera = new THREE.PerspectiveCamera(44, W() / H(), 0.1, 100);
+                    camera.position.set(2.5, 2.8, 7.5);
+                    camera.lookAt(2.5, 0, 0);
+
+                    /* ── COLOURS ── */
+                    const C_BODY = 0x1a2540;
+                    const C_BODY_L = 0xccd6f0;
+                    const C_ACCENT = 0x4a8cf7;
+                    const C_ACCENT_L = 0x2563eb;
+                    const C_DARK = 0x0d1520;
+                    const C_PROPEL = 0x3a6ad4;
+                    let isDark = true;
+
+                    /* ── MATERIALS (solid, not wireframe) ── */
+                    const matBody = new THREE.MeshStandardMaterial({ color: C_BODY, metalness: .7, roughness: .3 });
+                    const matArm = new THREE.MeshStandardMaterial({ color: C_DARK, metalness: .8, roughness: .25 });
+                    const matAccent = new THREE.MeshStandardMaterial({ color: C_ACCENT, metalness: .5, roughness: .4 });
+                    const matProp = new THREE.MeshStandardMaterial({ color: C_PROPEL, metalness: .3, roughness: .5, transparent: true, opacity: .82 });
+                    const matMotor = new THREE.MeshStandardMaterial({ color: 0x0a0f1a, metalness: .9, roughness: .15 });
+                    const matLens = new THREE.MeshStandardMaterial({ color: 0x060a10, metalness: .95, roughness: .05 });
+                    const matGlass = new THREE.MeshStandardMaterial({ color: C_ACCENT, metalness: .1, roughness: .05, transparent: true, opacity: .35 });
+
+                    /* ── DRONE GROUP ── */
+                    const droneGroup = new THREE.Group();
+
+                    /* -- Main body plate (flat octagonal look using BoxGeometry) -- */
+                    const bodyGeo = new THREE.CylinderGeometry(.55, .62, .14, 8);
+                    const bodyMesh = new THREE.Mesh(bodyGeo, matBody);
+                    droneGroup.add(bodyMesh);
+
+                    /* -- Bottom plate -- */
+                    const botGeo = new THREE.CylinderGeometry(.48, .52, .06, 8);
+                    const botMesh = new THREE.Mesh(botGeo, matArm);
+                    botMesh.position.y = -.1;
+                    droneGroup.add(botMesh);
+
+                    /* -- Top accent ring -- */
+                    const ringGeo = new THREE.TorusGeometry(.52, .025, 8, 32);
+                    const ringMesh = new THREE.Mesh(ringGeo, matAccent);
+                    ringMesh.rotation.x = Math.PI / 2;
+                    ringMesh.position.y = .08;
+                    droneGroup.add(ringMesh);
+
+                    /* -- Camera dome (front) -- */
+                    const domeGeo = new THREE.SphereGeometry(.22, 16, 12, 0, Math.PI * 2, 0, Math.PI * .55);
+                    const domeMesh = new THREE.Mesh(domeGeo, matGlass);
+                    domeMesh.position.set(0, .07, -.42);
+                    droneGroup.add(domeMesh);
+
+                    /* -- Lens -- */
+                    const lensGeo = new THREE.CylinderGeometry(.085, .085, .07, 16);
+                    const lensMesh = new THREE.Mesh(lensGeo, matLens);
+                    lensMesh.rotation.x = Math.PI / 2;
+                    lensMesh.position.set(0, .04, -.62);
+                    droneGroup.add(lensMesh);
+
+                    /* -- Lens ring -- */
+                    const lrGeo = new THREE.TorusGeometry(.09, .012, 8, 20);
+                    const lrMesh = new THREE.Mesh(lrGeo, matAccent);
+                    lrMesh.rotation.x = Math.PI / 2;
+                    lrMesh.position.set(0, .04, -.59);
+                    droneGroup.add(lrMesh);
+
+                    /* -- Battery/center top detail -- */
+                    const battGeo = new THREE.BoxGeometry(.3, .06, .55);
+                    const battMesh = new THREE.Mesh(battGeo, matArm);
+                    battMesh.position.y = .11;
+                    droneGroup.add(battMesh);
+
+                    /* ── ARMS — 4 diagonal, each with motor + 2 blades ── */
+                    const ARM_ANGLES = [45, 135, 225, 315]; // degrees
+                    const propGroups = [];
+
+                    ARM_ANGLES.forEach((deg, i) => {
+                        const rad = deg * Math.PI / 180;
+                        const armLen = 1.05;
+                        const endX = Math.cos(rad) * armLen;
+                        const endZ = Math.sin(rad) * armLen;
+
+                        /* Arm tube */
+                        const aGeo = new THREE.CylinderGeometry(.04, .035, armLen, 8);
+                        const aMesh = new THREE.Mesh(aGeo, matArm);
+                        aMesh.rotation.z = Math.PI / 2;
+                        aMesh.rotation.y = -rad;
+                        aMesh.position.set(endX * .5, 0, endZ * .5);
+                        droneGroup.add(aMesh);
+
+                        /* Motor cylinder */
+                        const mGeo = new THREE.CylinderGeometry(.095, .105, .14, 16);
+                        const mMesh = new THREE.Mesh(mGeo, matMotor);
+                        mMesh.position.set(endX, .04, endZ);
+                        droneGroup.add(mMesh);
+
+                        /* Motor top cap (accent colour) */
+                        const capGeo = new THREE.CylinderGeometry(.06, .06, .05, 16);
+                        const capMesh = new THREE.Mesh(capGeo, matAccent);
+                        capMesh.position.set(endX, .12, endZ);
+                        droneGroup.add(capMesh);
+
+                        /* Motor shaft */
+                        const shaftGeo = new THREE.CylinderGeometry(.015, .015, .1, 8);
+                        const shaftMesh = new THREE.Mesh(shaftGeo, matAccent);
+                        shaftMesh.position.set(endX, .19, endZ);
+                        droneGroup.add(shaftMesh);
+
+                        /* Propeller hub */
+                        const hubGeo = new THREE.CylinderGeometry(.03, .03, .03, 10);
+                        const hubMesh = new THREE.Mesh(hubGeo, matMotor);
+                        hubMesh.position.set(endX, .235, endZ);
+                        droneGroup.add(hubMesh);
+
+                        /* Propeller group — 2 blades */
+                        const pg = new THREE.Group();
+                        pg.position.set(endX, .25, endZ);
+
+                        for (let b = 0; b < 2; b++) {
+                            /* Blade — tapered box */
+                            const bladeGeo = new THREE.BoxGeometry(.72, .022, .1);
+                            const blade = new THREE.Mesh(bladeGeo, matProp);
+                            blade.rotation.y = b * Math.PI;
+                            blade.rotation.z = b === 0 ? .06 : -.06; // slight pitch
+                            blade.position.set(b === 0 ? .36 : -.36, 0, 0);
+                            /* Reset and use world offset instead */
+                            blade.position.x = 0;
+                            blade.position.z = 0;
+                            blade.rotation.y = b * Math.PI + .05;
+                            pg.add(blade);
+                        }
+                        droneGroup.add(pg);
+                        propGroups.push({ g: pg, speed: i % 2 === 0 ? .32 : -.32 });
+
+                        /* Landing leg */
+                        const legGeo = new THREE.CylinderGeometry(.02, .02, .45, 6);
+                        const legMesh = new THREE.Mesh(legGeo, matArm);
+                        const legX = Math.cos(rad) * .5, legZ = Math.sin(rad) * .5;
+                        legMesh.position.set(legX, -.3, legZ);
+                        droneGroup.add(legMesh);
+
+                        /* Leg pad */
+                        const padGeo = new THREE.CylinderGeometry(.055, .055, .025, 8);
+                        const padMesh = new THREE.Mesh(padGeo, matAccent);
+                        padMesh.position.set(legX, -.54, legZ);
+                        droneGroup.add(padMesh);
+                    });
+
+                    /* -- LEDs front/back -- */
+                    [[-0.5, .09, -.38, 0xff3333], [0.5, .09, -.38, 0x44ff88]].forEach(([x, y, z, c]) => {
+                        const lMat = new THREE.MeshBasicMaterial({ color: c });
+                        const lMesh = new THREE.Mesh(new THREE.SphereGeometry(.028, 8, 8), lMat);
+                        lMesh.position.set(x, y, z);
+                        droneGroup.add(lMesh);
+                    });
+
+                    droneGroup.position.set(2.5, .2, 0);
+                    scene.add(droneGroup);
+
+                    /* ── ORBITAL RINGS (around drone) ── */
+                    const orbitRings = [];
+                    [[1.9, Math.PI / 2, 0, 0], [2.3, Math.PI / 4, Math.PI / 6, 0], [2.7, 0, 0, Math.PI / 3]].forEach(([r, rx, ry, rz]) => {
+                        const rMat = new THREE.MeshBasicMaterial({ color: C_ACCENT, transparent: true, opacity: .12 });
+                        const rMesh = new THREE.Mesh(new THREE.TorusGeometry(r, .008, 4, 80), rMat);
+                        rMesh.position.set(2.5, 0, 0);
+                        rMesh.rotation.set(rx, ry, rz);
+                        scene.add(rMesh);
+                        orbitRings.push(rMesh);
+                    });
+
+                    /* ── PARTICLES (full width) ── */
+                    const pCount = 500;
+                    const pPos = new Float32Array(pCount * 3);
+                    for (let i = 0; i < pCount; i++) {
+                        pPos[i * 3] = (Math.random() - .5) * 30;
+                        pPos[i * 3 + 1] = (Math.random() - .5) * 12;
+                        pPos[i * 3 + 2] = (Math.random() - .5) * 8 - 3;
+                    }
+                    const ptGeo = new THREE.BufferGeometry();
+                    ptGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+                    const ptMat = new THREE.PointsMaterial({ color: C_ACCENT, size: .018, transparent: true, opacity: .28 });
+                    scene.add(new THREE.Points(ptGeo, ptMat));
+
+                    /* ── GRID ── */
+                    const grid = new THREE.GridHelper(50, 50, C_ACCENT, C_ACCENT);
+                    grid.material.opacity = .04;
+                    grid.material.transparent = true;
+                    grid.position.y = -2;
+                    scene.add(grid);
+
+                    /* ── LIGHTS ── */
+                    scene.add(new THREE.AmbientLight(0xffffff, .55));
+
+                    const keyLight = new THREE.DirectionalLight(0x7ab4ff, 1.4);
+                    keyLight.position.set(4, 6, 5);
+                    keyLight.castShadow = true;
+                    scene.add(keyLight);
+
+                    const fillLight = new THREE.DirectionalLight(0x4a8cf7, .6);
+                    fillLight.position.set(-4, 2, -3);
+                    scene.add(fillLight);
+
+                    const rimLight = new THREE.DirectionalLight(0xffffff, .4);
+                    rimLight.position.set(0, 4, -6);
+                    scene.add(rimLight);
+
+                    /* ── THEME UPDATE ── */
+                    window._themeUpdate = (t) => {
+                        isDark = t === 'dark';
+                        matBody.color.setHex(isDark ? C_BODY : C_BODY_L);
+                        matAccent.color.setHex(isDark ? C_ACCENT : C_ACCENT_L);
+                        matGlass.color.setHex(isDark ? C_ACCENT : C_ACCENT_L);
+                        ptMat.color.setHex(isDark ? C_ACCENT : C_ACCENT_L);
+                        orbitRings.forEach(r => r.material.color.setHex(isDark ? C_ACCENT : C_ACCENT_L));
+                        keyLight.color.setHex(isDark ? 0x7ab4ff : 0xfff8f0);
+                        keyLight.intensity = isDark ? 1.4 : 1.8;
+                    };
+
+                    /* ── MOUSE TRACKING ── */
+                    let targetX = 0, targetY = 0, currentX = 0, currentY = 0;
+                    window.addEventListener('mousemove', e => {
+                        targetX = (e.clientX / window.innerWidth - .5) * 1.2;
+                        targetY = (e.clientY / window.innerHeight - .5) * .8;
+                    });
+
+                    /* ── ANIMATE ── */
+                    function animate() {
+                        requestAnimationFrame(animate);
+                        const t = Date.now() * .001;
+
+                        /* Smooth mouse lerp */
+                        currentX += (targetX - currentX) * .05;
+                        currentY += (targetY - currentY) * .05;
+
+                        /* Drone hover + mouse tilt */
+                        droneGroup.position.y = .2 + Math.sin(t * .8) * .12;
+                        droneGroup.rotation.y = currentX * .6 + t * .15;
+                        droneGroup.rotation.x = -currentY * .4 + Math.sin(t * .3) * .025;
+                        droneGroup.rotation.z = Math.sin(t * .5) * .02 + currentX * .06;
+
+                        /* Propellers spin */
+                        propGroups.forEach(p => { p.g.rotation.y += p.speed; });
+
+                        /* Orbital rings slow spin */
+                        orbitRings.forEach((r, i) => {
+                            r.rotation.y += .004 * (i % 2 === 0 ? 1 : -1);
+                            r.rotation.z += .003;
+                        });
+
+                        /* Camera subtle mouse pan — looking at drone */
+                        camera.position.x = 2.5 + currentX * .3;
+                        camera.position.y = 2.8 - currentY * .2;
+                        camera.lookAt(2.5, 0, 0);
+
+                        renderer.render(scene, camera);
+                    }
+                    animate();
+
+                    window.addEventListener('resize', () => {
+                        renderer.setSize(W(), H());
+                        camera.aspect = W() / H();
+                        camera.updateProjectionMatrix();
+                    });
+                })()
+            } catch (e) { console.warn('Hero Three.js error:', e) }
+
+            /* ── ROVER OBSTACLE COURSE ──────────────────────── */
+            try {
+                (function () {
+                    const cv = document.getElementById('drone-canvas');
+                    const cont = cv.parentElement;
+                    const W = () => Math.max(cont.clientWidth, 100);
+                    const H = () => Math.max(cont.clientHeight, 100);
+
+                    const renderer = new THREE.WebGLRenderer({ canvas: cv, alpha: true, antialias: true });
+                    renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+                    renderer.setSize(W(), H());
+                    renderer.shadowMap.enabled = true;
+
+                    const scene = new THREE.Scene();
+                    const camera = new THREE.PerspectiveCamera(52, W() / H(), 0.1, 300);
+                    camera.position.set(0, 5, 11);
+                    camera.lookAt(0, 0, 0);
+
+                    /* ── FOG ── */
+                    scene.fog = new THREE.FogExp2(0x06090f, 0.022);
+
+                    /* ═══════════ MATERIALS ═══════════ */
+                    const mat = {
+                        chassis: new THREE.MeshStandardMaterial({ color: 0x1c2535, metalness: .75, roughness: .28 }),
+                        dark: new THREE.MeshStandardMaterial({ color: 0x0b0f18, metalness: .85, roughness: .18 }),
+                        accent: new THREE.MeshStandardMaterial({ color: 0x4a8cf7, metalness: .5, roughness: .4 }),
+                        panel: new THREE.MeshStandardMaterial({ color: 0x1a2540, metalness: .6, roughness: .32 }),
+                        hub: new THREE.MeshStandardMaterial({ color: 0x111828, metalness: .9, roughness: .15 }),
+                        rubber: new THREE.MeshStandardMaterial({ color: 0x0c1016, metalness: .05, roughness: .95 }),
+                        glass: new THREE.MeshStandardMaterial({ color: 0x4a8cf7, metalness: .1, roughness: .05, transparent: true, opacity: .45 }),
+                        road: new THREE.MeshStandardMaterial({ color: 0x12181f, roughness: .85, metalness: .05 }),
+                        roadLine: new THREE.MeshStandardMaterial({ color: 0xf0c040, roughness: .5, metalness: .1, emissive: 0xf0c040, emissiveIntensity: .15 }),
+                        bump: new THREE.MeshStandardMaterial({ color: 0xe07030, roughness: .7, metalness: .1, emissive: 0xe07030, emissiveIntensity: .08 }),
+                        bumpLine: new THREE.MeshStandardMaterial({ color: 0xfafafa, roughness: .5, metalness: .1 }),
+                        barrier: new THREE.MeshStandardMaterial({ color: 0xcc2222, roughness: .5, metalness: .2, emissive: 0xaa1111, emissiveIntensity: .12 }),
+                        barrierW: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .5, metalness: .1 }),
+                        cone: new THREE.MeshStandardMaterial({ color: 0xff7020, roughness: .6, metalness: .05, emissive: 0xff5000, emissiveIntensity: .1 }),
+                        gate: new THREE.MeshStandardMaterial({ color: 0x22cc44, roughness: .4, metalness: .3, emissive: 0x00aa22, emissiveIntensity: .2 }),
+                        ground: new THREE.MeshStandardMaterial({ color: 0x080c10, roughness: .95, metalness: .02 }),
+                        ledR: new THREE.MeshBasicMaterial({ color: 0xff2222 }),
+                        ledG: new THREE.MeshBasicMaterial({ color: 0x22ff66 }),
+                        ledB: new THREE.MeshBasicMaterial({ color: 0x4a8cf7 }),
+                        sand: new THREE.MeshStandardMaterial({ color: 0x8b6914, roughness: .95, metalness: .02 }),
+                    };
+
+                    /* ═══════════ HELPERS ═══════════ */
+                    const box = (w, h, d, m) => new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+                    const cyl = (rt, rb, h, seg, m) => new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), m);
+
+                    /* ═══════════ GROUND ═══════════ */
+                    const ground = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), mat.ground);
+                    ground.rotation.x = -Math.PI / 2;
+                    ground.receiveShadow = true;
+                    scene.add(ground);
+
+                    /* Grass patches */
+                    for (let i = 0; i < 60; i++) {
+                        const g = box(.5 + Math.random() * .8, .01, .5 + Math.random() * .8,
+                            new THREE.MeshStandardMaterial({ color: 0x0a1a08, roughness: .95 }));
+                        g.position.set((Math.random() - .5) * 80, .005, (Math.random() - .5) * 80);
+                        scene.add(g);
+                    }
+
+                    /* ═══════════ GRID OVERLAY ═══════════ */
+                    const grid = new THREE.GridHelper(100, 80, 0x1a2a1a, 0x1a2a1a);
+                    grid.material.opacity = .18; grid.material.transparent = true;
+                    scene.add(grid);
+
+                    /* ═══════════ COURSE ROAD ═══════════ */
+                    /* Road layout: straight stretches + turns forming a loop
+                       Sections stored as {x, z, w, d, ry} (rotY) */
+                    const ROAD_W = 6;
+                    const roadSections = [
+                        // straight south
+                        { x: 0, z: 0, w: ROAD_W, d: 40, ry: 0 },
+                        // right turn pad
+                        { x: 10, z: -20, w: 20, d: ROAD_W, ry: 0 },
+                        // straight east
+                        { x: 20, z: -20, w: ROAD_W, d: 20, ry: 0 },
+                        // right turn pad
+                        { x: 20, z: 10, w: ROAD_W, d: 20, ry: 0 },
+                        // straight west
+                        { x: 10, z: 10, w: 20, d: ROAD_W, ry: 0 },
+                    ];
+
+                    // Just use a single large loop track made of flat planes
+                    const trackPath = [
+                        // section: centerX, centerZ, width, length, rotationY
+                        [0, 10, ROAD_W, 48, 0],   // main straight (Z axis)
+                        [18, -14, ROAD_W, 48, Math.PI / 2],   // right straight (X axis)
+                        [-18, -14, ROAD_W, 48, Math.PI / 2],   // left straight (X axis)
+                        [0, -38, ROAD_W, 36, 0],   // bottom straight
+                        // corner connectors
+                        [18, 10, 12, 12, 0],
+                        [-18, 10, 12, 12, 0],
+                        [18, -38, 12, 12, 0],
+                        [-18, -38, 12, 12, 0],
+                    ];
+
+                    trackPath.forEach(([cx, cz, w, l, ry]) => {
+                        const road = box(w, .04, l, mat.road);
+                        road.position.set(cx, .02, cz);
+                        road.rotation.y = ry;
+                        road.receiveShadow = true;
+                        scene.add(road);
+
+                        // Dashed center line
+                        const dashCount = Math.floor(l / 3);
+                        for (let d = 0; d < dashCount; d++) {
+                            const dash = box(.15, .05, 1.2, mat.roadLine);
+                            const offset = -l / 2 + 1.5 + d * 3;
+                            if (ry === 0) dash.position.set(cx, .042, cz + offset);
+                            else dash.position.set(cx + offset, .042, cz);
+                            scene.add(dash);
+                        }
+
+                        // Edge lines
+                        [-1, 1].forEach(side => {
+                            const edge = box(ry === 0 ? .12 : l, .045, ry === 0 ? l : .12, mat.roadLine);
+                            if (ry === 0) edge.position.set(cx + side * (w / 2 - .08), .041, cz);
+                            else edge.position.set(cx, .041, cz + side * (w / 2 - .08));
+                            scene.add(edge);
+                        });
+                    });
+
+                    /* Start/Finish line */
+                    for (let s = 0; s < 5; s++) {
+                        const col = s % 2 === 0 ? 0xffffff : 0x111111;
+                        const sq = box(ROAD_W / 5, .05, .7, new THREE.MeshStandardMaterial({ color: col }));
+                        sq.position.set(-ROAD_W / 2 + ROAD_W / 10 + s * (ROAD_W / 5), .042, 13);
+                        scene.add(sq);
+                    }
+
+                    /* ═══════════ SPEED BUMPS ═══════════ */
+                    const bumpPositions = [
+                        [0, 4],
+                        [0, -8],
+                        [18, -5],
+                        [18, -25],
+                        [-18, -5],
+                        [-18, -25],
+                        [0, -30],
+                    ];
+                    bumpPositions.forEach(([bx, bz]) => {
+                        // Main bump body
+                        const bump = new THREE.Mesh(new THREE.CylinderGeometry(ROAD_W / 2, ROAD_W / 2 + .1, .18, 4, 1), mat.bump);
+                        bump.scale.set(1, .6, 1);
+                        bump.rotation.y = Math.PI / 4;
+                        bump.position.set(bx, .09, bz);
+                        bump.receiveShadow = bump.castShadow = true;
+                        scene.add(bump);
+                        // Warning stripes
+                        for (let st = 0; st < 4; st++) {
+                            const stripe = box(ROAD_W * .22, .2, .06, st % 2 === 0 ? mat.bump : mat.bumpLine);
+                            stripe.position.set(bx - ROAD_W * .33 + st * (ROAD_W * .22), .1, bz - .58);
+                            scene.add(stripe);
+                            const stripe2 = box(ROAD_W * .22, .2, .06, st % 2 === 0 ? mat.bump : mat.bumpLine);
+                            stripe2.position.set(bx - ROAD_W * .33 + st * (ROAD_W * .22), .1, bz + .58);
+                            scene.add(stripe2);
+                        }
+                    });
+
+                    /* ═══════════ BARRIERS (Jersey barriers) ═══════════ */
+                    const barrierDefs = [
+                        // [x, z, rotY, count, gap]
+                        [8, 2, 0, 3, 2.2],
+                        [-8, -16, 0, 3, 2.2],
+                        [14, -10, Math.PI / 2, 3, 2.2],
+                        [-14, -20, Math.PI / 2, 3, 2.2],
+                        [8, -32, 0, 4, 2.2],
+                    ];
+                    barrierDefs.forEach(([bx, bz, ry, cnt, gap]) => {
+                        for (let i = 0; i < cnt; i++) {
+                            const b = new THREE.Group();
+                            // Main body
+                            const body = box(1.9, .55, .55, mat.barrier);
+                            b.add(body);
+                            // Top taper
+                            const top = box(1.9, .12, .35, mat.barrier);
+                            top.position.y = .335;
+                            b.add(top);
+                            // White stripes
+                            for (let s = 0; s < 3; s++) {
+                                const sw = box(.25, .56, .56, mat.barrierW);
+                                sw.position.x = -.7 + s * .7;
+                                b.add(sw);
+                            }
+                            const offset = (i - (cnt - 1) / 2) * gap;
+                            b.position.set(
+                                bx + (ry === 0 ? offset : 0),
+                                .28,
+                                bz + (ry === 0 ? 0 : offset)
+                            );
+                            b.rotation.y = ry;
+                            b.castShadow = b.receiveShadow = true;
+                            scene.add(b);
+                        }
+                    });
+
+                    /* ═══════════ TRAFFIC CONES (slalom) ═══════════ */
+                    const coneSlalom = [
+                        [3, -2], [-3, -5], [3, -8], [-3, -11],
+                        [21, -8], [15, -12], [21, -16], [15, -20],
+                        [-21, -8], [-15, -12], [-21, -16], [-15, -20],
+                    ];
+                    coneSlalom.forEach(([cx, cz]) => {
+                        const cone = new THREE.Group();
+                        const body = new THREE.Mesh(new THREE.CylinderGeometry(.08, .22, .45, 12), mat.cone);
+                        cone.add(body);
+                        const band = box(.22, .06, .22, mat.barrierW);
+                        band.position.y = .12;
+                        cone.add(band);
+                        const top = cyl(.02, .04, .08, 8, mat.barrierW);
+                        top.position.y = .28;
+                        cone.add(top);
+                        cone.position.set(cx, .225, cz);
+                        cone.castShadow = true;
+                        scene.add(cone);
+                    });
+
+                    /* ═══════════ GATES (pass through) ═══════════ */
+                    const gateDefs = [
+                        [0, -14, 0],
+                        [18, -35, Math.PI / 2],
+                        [-18, -35, Math.PI / 2],
+                        [0, -44, 0],
+                    ];
+                    const gates = [];
+                    gateDefs.forEach(([gx, gz, ry], gi) => {
+                        const g = new THREE.Group();
+                        // Left post
+                        const lp = cyl(.1, .1, 2.5, 10, mat.gate);
+                        lp.position.set(-ROAD_W / 2 + .2, 1.25, 0);
+                        g.add(lp);
+                        // Right post
+                        const rp = cyl(.1, .1, 2.5, 10, mat.gate);
+                        rp.position.set(ROAD_W / 2 - .2, 1.25, 0);
+                        g.add(rp);
+                        // Crossbar
+                        const cb = box(ROAD_W - .2, .14, .14, mat.gate);
+                        cb.position.y = 2.5;
+                        g.add(cb);
+                        // Number
+                        const numMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+                        const numDisc = new THREE.Mesh(new THREE.CylinderGeometry(.3, .3, .05, 12), numMat);
+                        numDisc.rotation.x = Math.PI / 2;
+                        numDisc.position.set(0, 2.5, .08);
+                        g.add(numDisc);
+                        // Glow top
+                        const glow = new THREE.Mesh(new THREE.SphereGeometry(.14, 8, 8),
+                            new THREE.MeshBasicMaterial({ color: 0x22ff44 }));
+                        glow.position.set(-ROAD_W / 2 + .2, 2.55, 0);
+                        g.add(glow);
+                        const glow2 = new THREE.Mesh(new THREE.SphereGeometry(.14, 8, 8),
+                            new THREE.MeshBasicMaterial({ color: 0x22ff44 }));
+                        glow2.position.set(ROAD_W / 2 - .2, 2.55, 0);
+                        g.add(glow2);
+
+                        g.position.set(gx, 0, gz);
+                        g.rotation.y = ry;
+                        g.castShadow = true;
+                        scene.add(g);
+                        gates.push({ group: g, x: gx, z: gz, ry: ry, passed: false, index: gi });
+                    });
+
+                    /* ═══════════ RUMBLE STRIPS ═══════════ */
+                    [[0, -2, 0], [18, -3, Math.PI / 2], [-18, -3, Math.PI / 2]].forEach(([rx, rz, ry]) => {
+                        for (let i = 0; i < 8; i++) {
+                            const r = box(ROAD_W, .04, .2, new THREE.MeshStandardMaterial({
+                                color: i % 2 === 0 ? 0xdd3322 : 0xffffff, roughness: .6
+                            }));
+                            r.position.set(rx, .022, rz + (i * .28 - 1));
+                            r.rotation.y = ry;
+                            scene.add(r);
+                        }
+                    });
+
+                    /* ═══════════ SCENERY ═══════════ */
+                    // Trees around course
+                    [[25, 10], [25, -25], [-25, 10], [-25, -25], [10, 20], [-10, 20], [8, -45], [-8, -45]].forEach(([tx, tz]) => {
+                        const trunk = cyl(.18, .22, 1.6, 8, new THREE.MeshStandardMaterial({ color: 0x2a1a08, roughness: .9 }));
+                        trunk.position.set(tx, .8, tz);
+                        scene.add(trunk);
+                        const crown = cyl(0, 1.1, 2.2, 8, new THREE.MeshStandardMaterial({ color: 0x0a2208, roughness: .95 }));
+                        crown.position.set(tx, 2.5, tz);
+                        scene.add(crown);
+                    });
+
+                    // Audience stands (blocks)
+                    [[28, 0], [28, -25], [-28, 0], [-28, -25]].forEach(([sx, sz]) => {
+                        const stand = box(4, 2.5, 6, new THREE.MeshStandardMaterial({ color: 0x1a1a2a, roughness: .8 }));
+                        stand.position.set(sx, 1.25, sz);
+                        scene.add(stand);
+                    });
+
+                    /* ═══════════ PARTICLES ═══════════ */
+                    const pN = 180, pB = new Float32Array(pN * 3);
+                    for (let i = 0; i < pN; i++) { pB[i * 3] = (Math.random() - .5) * 80; pB[i * 3 + 1] = Math.random() * 12; pB[i * 3 + 2] = (Math.random() - .5) * 80 - 5 }
+                    const ptG = new THREE.BufferGeometry(); ptG.setAttribute('position', new THREE.BufferAttribute(pB, 3));
+                    scene.add(new THREE.Points(ptG, new THREE.PointsMaterial({ color: 0x4a8cf7, size: .018, transparent: true, opacity: .2 })));
+
+                    /* ═══════════ LIGHTS ═══════════ */
+                    scene.add(new THREE.AmbientLight(0xffffff, .45));
+                    const sun = new THREE.DirectionalLight(0x9ab8ff, 1.3);
+                    sun.position.set(10, 18, 12); sun.castShadow = true;
+                    sun.shadow.mapSize.width = sun.shadow.mapSize.height = 2048;
+                    sun.shadow.camera.near = .5; sun.shadow.camera.far = 120;
+                    sun.shadow.camera.left = sun.shadow.camera.bottom = -50;
+                    sun.shadow.camera.right = sun.shadow.camera.top = 50;
+                    scene.add(sun);
+                    const fill = new THREE.DirectionalLight(0x4a8cf7, .5); fill.position.set(-8, 6, -8); scene.add(fill);
+                    // Course lights
+                    [[0, 14], [0, -38], [18, -14], [-18, -14]].forEach(([lx, lz]) => {
+                        const pl = new THREE.PointLight(0x4a8cf7, .8, 14); pl.position.set(lx, 4.5, lz); scene.add(pl);
+                        const lp = cyl(.04, .04, 4, 8, mat.dark); lp.position.set(lx, 2, lz); scene.add(lp);
+                        const lb = new THREE.Mesh(new THREE.SphereGeometry(.18, 8, 8), new THREE.MeshBasicMaterial({ color: 0x8ac4ff, transparent: true, opacity: .7 }));
+                        lb.position.set(lx, 4.5, lz); scene.add(lb);
+                    });
+
+                    /* ═══════════ BUILD ROVER ═══════════ */
+                    const rover = new THREE.Group();
+
+                    /* Chassis */
+                    const chas = box(1.6, .24, 2.8, mat.chassis); chas.castShadow = true; rover.add(chas);
+                    const bot2 = box(1.45, .06, 2.6, mat.dark); bot2.position.y = -.15; rover.add(bot2);
+                    [-1.3, 1.3].forEach(pz => {
+                        const sk = box(1.5, .06, .08, mat.accent); sk.position.set(0, -.11, pz); rover.add(sk);
+                    });
+
+                    /* Upper body */
+                    const body = box(1.3, .32, 2.3, mat.panel); body.position.y = .28; body.castShadow = true; rover.add(body);
+                    [-0.68, 0.68].forEach(px => {
+                        const s = box(.055, .32, 2.3, mat.accent); s.position.set(px, .28, 0); rover.add(s);
+                    });
+                    const deck2 = box(1.2, .07, 2.1, mat.chassis); deck2.position.y = .47; rover.add(deck2);
+
+                    /* LiDAR */
+                    const ltBase2 = cyl(.07, .09, .18, 12, mat.dark); ltBase2.position.set(0, .57, -.1); rover.add(ltBase2);
+                    const ltHead2 = cyl(.14, .14, .09, 16, mat.accent); ltHead2.position.set(0, .70, -.1); rover.add(ltHead2);
+                    const ltRing2 = new THREE.Mesh(new THREE.TorusGeometry(.14, .016, 8, 32), mat.accent);
+                    ltRing2.rotation.x = Math.PI / 2; ltRing2.position.set(0, .70, -.1); rover.add(ltRing2);
+
+                    /* Camera */
+                    const cam2 = box(.32, .2, .1, mat.dark); cam2.position.set(0, .36, -1.47); rover.add(cam2);
+                    [-0.08, 0.08].forEach(ox => {
+                        const lens = cyl(.045, .045, .07, 14, mat.glass); lens.rotation.x = Math.PI / 2; lens.position.set(ox, .36, -1.53); rover.add(lens);
+                    });
+                    /* Bumpers */
+                    const fb = box(1.55, .16, .08, mat.accent); fb.position.set(0, -.02, -1.46); rover.add(fb);
+                    const rb2 = box(1.55, .16, .08, mat.dark); rb2.position.set(0, -.02, 1.46); rover.add(rb2);
+                    /* Antenna */
+                    const an2 = cyl(.007, .009, .48, 6, mat.accent); an2.position.set(-.5, .78, 1.0); rover.add(an2);
+                    const at2 = new THREE.Mesh(new THREE.SphereGeometry(.016, 6, 6), mat.ledR); at2.position.set(-.5, 1.02, 1.0); rover.add(at2);
+                    /* LEDs */
+                    [[-0.55, .1, -1.47], [0.55, .1, -1.47]].forEach(([lx, ly, lz]) => {
+                        const hl = box(.12, .07, .04, mat.ledG); hl.position.set(lx, ly, lz); rover.add(hl);
+                    });
+                    [[-0.55, .1, 1.47], [0.55, .1, 1.47]].forEach(([lx, ly, lz]) => {
+                        const rl3 = box(.12, .07, .04, mat.ledR); rl3.position.set(lx, ly, lz); rover.add(rl3);
+                    });
+
+                    /* ═══ WHEELS — simple & correct ═══
+                       Chassis: 1.6(X) × 2.8(Z). Wheels on LEFT/RIGHT (X sides).
+                       Wheel axle = X axis. Tyre torus default faces Z → rotate PI/2 on Z → faces X.
+                       To spin (roll forward): rotate wheel group on X axis.
+                       Positions: x=±1.0 (beyond chassis half-width 0.8), z=±0.85 (front/rear)
+                       Wheel sits at y=−0.05 from chassis center (chassis half-height 0.12, wheel radius 0.22)
+                    ══ */
+                    const WHEEL_POS = [
+                        { x: -1.05, z: -0.85 },  // front-left
+                        { x: 1.05, z: -0.85 },  // front-right
+                        { x: -1.05, z: 0.85 },  // rear-left
+                        { x: 1.05, z: 0.85 },  // rear-right
+                    ];
+
+                    const wheelGroups = []; // each group spins on X for forward roll
+
+                    WHEEL_POS.forEach(({ x, z }) => {
+                        const wg = new THREE.Group();
+                        wg.position.set(x, -0.05, z); // position at corner, slightly below chassis center
+
+                        /* -- TYRE (torus) --
+                           TorusGeometry default: ring lies in XY plane, hole faces Z.
+                           We want wheel vertical, facing X (left/right).
+                           rotation.y = PI/2 → ring lies in XZ plane → hole faces X ✓
+                           Rolling forward (Z direction) = rotate this on Z axis. */
+                        const tyre = new THREE.Mesh(
+                            new THREE.TorusGeometry(0.22, 0.09, 12, 28),
+                            mat.rubber
+                        );
+                        tyre.rotation.y = Math.PI / 2;  // wheel now faces X axis ✓
+                        wg.add(tyre);
+
+                        /* -- TREAD BLOCKS (10 blocks around tyre, in XZ plane) -- */
+                        for (let t = 0; t < 10; t++) {
+                            const a = (t / 10) * Math.PI * 2;
+                            const tread = box(0.08, 0.05, 0.2, mat.rubber);
+                            // position in XZ plane (tyre after rotation.y=PI/2)
+                            tread.position.set(Math.cos(a) * 0.22, Math.sin(a) * 0.22, 0);
+                            tread.rotation.z = a;
+                            wg.add(tread);
+                        }
+
+                        /* -- HUB (flat cylinder, axis = X) -- */
+                        const hub = new THREE.Mesh(
+                            new THREE.CylinderGeometry(0.15, 0.15, 0.14, 16),
+                            mat.hub
+                        );
+                        hub.rotation.z = Math.PI / 2; // cylinder axis = X ✓
+                        wg.add(hub);
+
+                        /* -- SPOKES (5, rotate around X axis) -- */
+                        for (let s = 0; s < 5; s++) {
+                            const sa = (s / 5) * Math.PI * 2;
+                            const spoke = box(0.14, 0.03, 0.03, mat.accent);
+                            spoke.rotation.z = sa;
+                            spoke.position.set(0, Math.cos(sa) * 0.09, Math.sin(sa) * 0.09);
+                            wg.add(spoke);
+                        }
+
+                        /* -- HUB CAP (disc on outer face) -- */
+                        const capSide = x < 0 ? -1 : 1;
+                        const cap = new THREE.Mesh(
+                            new THREE.CylinderGeometry(0.08, 0.08, 0.02, 12),
+                            mat.accent
+                        );
+                        cap.rotation.z = Math.PI / 2;
+                        cap.position.x = capSide * 0.09;
+                        wg.add(cap);
+
+                        rover.add(wg);
+                        wheelGroups.push(wg);
+
+                        /* -- AXLE stub -- */
+                        const axle = new THREE.Mesh(
+                            new THREE.CylinderGeometry(0.02, 0.02, 0.3, 8),
+                            mat.accent
+                        );
+                        axle.rotation.z = Math.PI / 2;
+                        axle.position.set(x > 0 ? 0.05 : -0.05, -0.05, z);
+                        rover.add(axle);
+
+                        /* -- SUSPENSION ARM -- */
+                        const armLen = 0.3;
+                        const arm = box(armLen, 0.05, 0.05, mat.dark);
+                        arm.position.set(x > 0 ? 0.7 : -0.7, -0.05, z);
+                        rover.add(arm);
+
+                        /* -- FENDER -- */
+                        const fender = new THREE.Mesh(
+                            new THREE.CylinderGeometry(0.28, 0.28, 0.18, 14, 1, true, -0.4, 1.4),
+                            new THREE.MeshStandardMaterial({ color: 0x1c2535, metalness: .7, roughness: .3, side: THREE.DoubleSide })
+                        );
+                        fender.rotation.z = Math.PI / 2;
+                        fender.position.set(x, 0.0, z);
+                        rover.add(fender);
+                    });
+
+                    rover.position.set(0, 0.36, 11);
+                    rover.castShadow = true;
+                    scene.add(rover);
+
+                    /* ═══════════ MOUSE DRAG ORBIT ═══════════ */
+                    let orbitAz = -.3, orbitPol = .5, orbitR = 11;
+                    let tAz = -.3, tPol = .5;
+                    let isDrag = false, lastMX = 0, lastMY = 0;
+
+                    cv.addEventListener('mousedown', e => { if (!driving) { isDrag = true; lastMX = e.clientX; lastMY = e.clientY; cv.style.cursor = 'grabbing' } });
+                    window.addEventListener('mouseup', () => { isDrag = false; if (!driving) cv.style.cursor = 'grab' });
+                    window.addEventListener('mousemove', e => {
+                        if (!isDrag || driving) return;
+                        tAz -= (e.clientX - lastMX) * .009; tPol = Math.max(.1, Math.min(1.35, tPol - (e.clientY - lastMY) * .007));
+                        lastMX = e.clientX; lastMY = e.clientY;
+                    });
+                    cv.style.cursor = 'grab';
+
+                    /* ═══════════ GAME STATE ═══════════ */
+                    let driving = false;
+                    const keys = { w: false, a: false, s: false, d: false };
+                    let roverX = 0, roverZ = 11, roverAngle = Math.PI, speed = 0, wheelRot = 0;
+                    const MAX_SPEED = 5.5, ACCEL = .14, DECEL = .1, TURN = .05;
+                    let gatesPassed = 0, lapCount = 0, crashed = false;
+                    let crashTimer = 0;
+
+                    /* ═══════════ BUMP HEIGHTS (check if rover is on bump) ═══════════ */
+                    function getBumpHeight(x, z) {
+                        for (const [bx, bz] of bumpPositions) {
+                            const dx = x - bx, dz2 = z - bz;
+                            const d = Math.sqrt(dx * dx + dz2 * dz2);
+                            if (d < (ROAD_W / 2 + .2)) {
+                                const h = .1 * Math.max(0, 1 - d / (ROAD_W / 2));
+                                return h;
+                            }
+                        }
+                        return 0;
+                    }
+
+                    /* ═══════════ COLLISION with barriers ═══════════ */
+                    const barrierBoxes = [
+                        // recreate barrier AABBs from barrierDefs
+                        ...barrierDefs.flatMap(([bx, bz, ry, cnt, gap]) => {
+                            const arr = [];
+                            for (let i = 0; i < cnt; i++) {
+                                const off = (i - (cnt - 1) / 2) * gap;
+                                const wx = ry === 0 ? off : 0, wz = ry === 0 ? 0 : off;
+                                arr.push({ x: bx + wx, z: bz + wz, hw: .95, hd: .28 });
+                            }
+                            return arr;
+                        })
+                    ];
+
+                    function checkBarrierCollision(nx, nz) {
+                        for (const b of barrierBoxes) {
+                            if (Math.abs(nx - b.x) < b.hw + .9 && Math.abs(nz - b.z) < b.hd + .9) return true;
+                        }
+                        return false;
+                    }
+
+                    /* ═══════════ CONTROLS ═══════════ */
+                    function onKey(e, down) {
+                        if (!driving) return;
+                        const k = e.key.toLowerCase();
+                        if (k === 'w' || k === 'arrowup') { keys.w = down; e.preventDefault() }
+                        if (k === 's' || k === 'arrowdown') { keys.s = down; e.preventDefault() }
+                        if (k === 'a' || k === 'arrowleft') { keys.a = down; e.preventDefault() }
+                        if (k === 'd' || k === 'arrowright') { keys.d = down; e.preventDefault() }
+                        ['kW', 'kS', 'kA', 'kD'].forEach(id => {
+                            const el = document.getElementById(id);
+                            if (el) el.classList.toggle('active', id === 'kW' ? keys.w : id === 'kS' ? keys.s : id === 'kA' ? keys.a : keys.d);
+                        });
+                    }
+                    window.addEventListener('keydown', e => onKey(e, true));
+                    window.addEventListener('keyup', e => onKey(e, false));
+
+                    const playBtn = document.getElementById('roverPlayBtn');
+                    const keysUI = document.getElementById('roverKeys');
+                    const stopBtn = document.getElementById('roverStopBtn');
+                    const speedFill = document.getElementById('roverSpeedFill');
+                    const speedVal = document.getElementById('roverSpeedVal');
+
+                    /* Update UI label */
+                    const playBtnTxt = document.querySelector('#roverPlayBtn .rpb-txt');
+                    if (playBtnTxt) playBtnTxt.textContent = 'Drive the Course';
+
+                    if (playBtn) playBtn.addEventListener('click', () => {
+                        driving = true; playBtn.style.display = 'none'; keysUI.style.display = 'block';
+                        cv.style.cursor = 'default';
+                        // reset rover to start
+                        roverX = 0; roverZ = 11; roverAngle = Math.PI; speed = 0;
+                        rover.position.set(0, .36, 11); rover.rotation.y = Math.PI;
+                        gatesPassed = 0; lapCount = 0; crashed = false;
+                        gates.forEach(g => { g.passed = false; g.group.children.forEach(c => { if (c.material && c.material.color) c.material.color.setHex(0x22cc44) }) });
+                    });
+                    if (stopBtn) stopBtn.addEventListener('click', () => {
+                        driving = false; keys.w = keys.a = keys.s = keys.d = false; speed = 0;
+                        playBtn.style.display = 'inline-flex'; keysUI.style.display = 'none';
+                        cv.style.cursor = 'grab';
+                        ['kW', 'kA', 'kS', 'kD'].forEach(id => document.getElementById(id)?.classList.remove('active'));
+                        if (speedFill) speedFill.style.width = '0%';
+                        if (speedVal) speedVal.textContent = '0.0 m/s';
+                    });
+
+                    /* ═══════════ ANIMATE ═══════════ */
+                    let prevTime = performance.now();
+
+                    function animate3() {
+                        requestAnimationFrame(animate3);
+                        const now = performance.now();
+                        const dt = Math.min((now - prevTime) / 1000, .05);
+                        prevTime = now;
+                        const t = now * .001;
+
+                        orbitAz += (tAz - orbitAz) * .08;
+                        orbitPol += (tPol - orbitPol) * .08;
+
+                        /* LiDAR always spins */
+                        ltHead2.rotation.y = t * 1.8;
+                        ltRing2.rotation.y = t * 1.8;
+
+                        if (driving) {
+                            if (!crashed) {
+                                /* Acceleration */
+                                if (keys.w) speed = Math.min(speed + ACCEL, MAX_SPEED);
+                                else if (keys.s) speed = Math.max(speed - ACCEL, -MAX_SPEED * .5);
+                                else speed *= (1 - DECEL);
+                                if (Math.abs(speed) < .01) speed = 0;
+
+                                /* Bump slowdown */
+                                const bh = getBumpHeight(roverX, roverZ);
+                                if (bh > .04) speed *= .85;
+
+                                /* Steering */
+                                if (keys.a) roverAngle += TURN * (Math.abs(speed) / MAX_SPEED + .25) * dt * 60;
+                                if (keys.d) roverAngle -= TURN * (Math.abs(speed) / MAX_SPEED + .25) * dt * 60;
+
+                                /* Try move */
+                                const nx = roverX + Math.sin(roverAngle) * speed * dt * 60 * .016;
+                                const nz = roverZ + Math.cos(roverAngle) * speed * dt * 60 * .016;
+
+                                if (!checkBarrierCollision(nx, nz)) {
+                                    roverX = Math.max(-22, Math.min(22, nx));
+                                    roverZ = Math.max(-48, Math.min(16, nz));
+                                } else {
+                                    speed *= -.4; // bounce back
+                                    crashed = true; crashTimer = 18;
+                                }
+                            } else {
+                                crashTimer--;
+                                speed *= .85;
+                                if (crashTimer <= 0) crashed = false;
+                            }
+
+                            /* Wheel spin — tyre faces X, rolls forward = rotate group on X axis */
+                            wheelRot += speed * dt * 60 * 0.06;
+                            wheelGroups.forEach(wg => { wg.rotation.x = wheelRot; });
+
+                            /* Gate check */
+                            gates.forEach(g => {
+                                if (g.passed) return;
+                                const dx = roverX - g.x, dz = roverZ - g.z;
+                                const dist = Math.sqrt(dx * dx + dz * dz);
+                                if (dist < 4.5) {
+                                    g.passed = true;
+                                    gatesPassed++;
+                                    // Turn gate green→gold
+                                    g.group.children.forEach(c => {
+                                        if (c.material && c.material.color) c.material.color.setHex(0xf0c040);
+                                    });
+                                    if (gatesPassed === gates.length) { lapCount++; gatesPassed = 0; gates.forEach(g2 => g2.passed = false); gates.forEach(gg => { gg.group.children.forEach(c => { if (c.material && c.material.color) c.material.color.setHex(0x22cc44) }) }) }
+                                }
+                            });
+
+                            /* Apply to rover */
+                            rover.position.x = roverX;
+                            rover.position.z = roverZ;
+                            rover.rotation.y = roverAngle;
+                            rover.position.y = .36 + getBumpHeight(roverX, roverZ) + (Math.abs(speed) > .4 ? Math.sin(t * 22) * .01 * Math.abs(speed) / MAX_SPEED : 0);
+
+                            /* Speed UI */
+                            if (speedFill) speedFill.style.width = (Math.abs(speed) / MAX_SPEED * 100) + '%';
+                            if (speedVal) speedVal.textContent = (Math.abs(speed) * .25).toFixed(1) + ' m/s';
+
+                            /* Chase camera */
+                            const cd = 10, ch = 5.2;
+                            const tx3 = roverX - Math.sin(roverAngle) * cd;
+                            const tz3 = roverZ - Math.cos(roverAngle) * cd;
+                            camera.position.x += (tx3 - camera.position.x) * .07;
+                            camera.position.z += (tz3 - camera.position.z) * .07;
+                            camera.position.y += (ch - camera.position.y) * .07;
+                            camera.lookAt(roverX, .8, roverZ);
+
+                        } else {
+                            /* Idle orbit */
+                            rover.position.y = .36 + Math.sin(t * .6) * .02;
+                            const ocx = Math.sin(orbitAz) * orbitR;
+                            const ocy = Math.sin(orbitPol) * orbitR * .75 + .5;
+                            const ocz = Math.cos(orbitAz) * orbitR;
+                            camera.position.set(ocx, ocy, ocz);
+                            camera.lookAt(roverX, .5, roverZ);
+                        }
+
+                        renderer.render(scene, camera);
+                    }
+                    animate3();
+
+                    window.addEventListener('resize', () => {
+                        renderer.setSize(W(), H());
+                        camera.aspect = W() / H();
+                        camera.updateProjectionMatrix();
+                    });
+
+                })()
+            } catch (e) { console.warn('Rover Three.js error:', e) }
+        }); // end window.addEventListener('load')
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,170 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;800;900&display=swap');
+
+:root {
+  --bg-lavender: #e5d0f1;
+  --bg-cream: #fdf9e1;
+  --bg-green: #e0f2e0;
+  --bg-orange: #ffcd6d;
+  --bg-blue: #d8e9f0;
+  --text-dark: #2d2d2d;
+  --border-width: 2px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Outfit', sans-serif;
+  color: var(--text-dark);
+  line-height: 1.4;
+  overflow-x: hidden;
+  background-color: var(--bg-lavender);
+}
+
+/* SECTION SEPARATORS - SCALLOPED EDGES */
+.scallop-top {
+  position: relative;
+}
+
+.scallop-top::before {
+  content: "";
+  position: absolute;
+  top: -20px;
+  left: 0;
+  width: 100%;
+  height: 40px;
+  background-image: radial-gradient(circle at 50% 100%, transparent 12px, currentColor 13px);
+  background-size: 40px 40px;
+  z-index: 5;
+}
+
+.scallop-bottom {
+  position: relative;
+}
+
+.scallop-bottom::after {
+  content: "";
+  position: absolute;
+  bottom: -20px;
+  left: 0;
+  width: 100%;
+  height: 40px;
+  background-image: radial-gradient(circle at 50% 0%, transparent 12px, currentColor 13px);
+  background-size: 40px 40px;
+  z-index: 5;
+}
+
+/* CARDS & BORDERS */
+.brutalist-card {
+  background: white;
+  border: var(--border-width) solid var(--text-dark);
+  border-radius: 40px;
+  padding: 2rem;
+  box-shadow: 8px 8px 0 var(--text-dark);
+  transition: transform 0.15s cubic-bezier(0.33, 1, 0.68, 1), box-shadow 0.15s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.brutalist-card:hover {
+  transform: translate(4px, 4px);
+  box-shadow: 4px 4px 0 var(--text-dark);
+}
+
+.brutalist-card:active {
+  transform: translate(8px, 8px);
+  box-shadow: 0 0 0 var(--text-dark);
+}
+
+/* TYPOGRAPHY */
+h1 { font-size: 3.5rem; font-weight: 900; letter-spacing: -0.02em; }
+h2 { font-size: 2.8rem; font-weight: 800; }
+h3 { font-size: 1.8rem; font-weight: 800; }
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* BUTTONS */
+.btn-buddy {
+  background: var(--text-dark);
+  color: white;
+  padding: 0.6rem 1.5rem;
+  border-radius: 50px;
+  border: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.btn-buddy:hover {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+}
+
+.btn-buddy:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 rgba(0,0,0,0.3);
+}
+
+
+.btn-buddy:hover {
+  transform: scale(1.05);
+}
+
+/* STICKERS */
+.sticker {
+  position: absolute;
+  padding: 10px 20px;
+  border: 1.5px solid var(--text-dark);
+  border-radius: 50px;
+  font-weight: 800;
+  font-size: 0.8rem;
+  box-shadow: 2px 2px 0 var(--text-dark);
+  z-index: 2;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.marquee-content {
+  display: flex;
+  animation: marquee 20s linear infinite;
+}
+
+.brutalist-nav {
+  box-shadow: 6px 6px 0 black;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.brutalist-nav:hover {
+  transform: translate(3px, 3px);
+  box-shadow: 3px 3px 0 black;
+}
+
+.brutalist-nav:active {
+  transform: translate(6px, 6px);
+  box-shadow: 0 0 0 black;
+}
+
+.nav-links span {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.nav-links span:hover {
+  color: #666;
+}
+
