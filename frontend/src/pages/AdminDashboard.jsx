@@ -45,7 +45,7 @@ export default function AdminDashboard() {
   // Manual Generator States
   const [gitUser, setGitUser] = useState(import.meta.env.VITE_GITHUB_OWNER || 'priyankarpadhy-eng');
   const [gitRepo, setGitRepo] = useState(import.meta.env.VITE_GITHUB_REPO || 'igit_robotics_storage');
-  const [gitTag, setGitTag] = useState('v1.0.0');
+  const [gitTag, setGitTag] = useState('robo');
   const [gitFile, setGitFile] = useState('');
 
   // File Upload States
@@ -78,13 +78,13 @@ export default function AdminDashboard() {
     setUploadingStatus('INITIATING');
     try {
       setUploadingStatus('RESOLVING_RELEASE');
-      const latestUrl = `https://api.github.com/repos/${owner}/${repo}/releases/latest`;
-      const latestRes = await fetch(latestUrl, {
+      const tagUrl = `https://api.github.com/repos/${owner}/${repo}/releases/tags/robo`;
+      const tagRes = await fetch(tagUrl, {
         headers: { Authorization: `token ${token}` }
       });
 
       let release;
-      if (latestRes.status === 404) {
+      if (tagRes.status === 404) {
         setUploadingStatus('CREATING_RELEASE');
         const createRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`, {
           method: 'POST',
@@ -93,8 +93,8 @@ export default function AdminDashboard() {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            tag_name: 'v1.0.0',
-            name: 'Asset Store v1.0.0',
+            tag_name: 'robo',
+            name: 'Robo Assets Store',
             body: 'Automated file storage for IGIT Robotics web portal.',
             draft: false,
             prerelease: false
@@ -103,8 +103,8 @@ export default function AdminDashboard() {
          if (!createRes.ok) throw new Error('Failed to create release');
          release = await createRes.json();
       } else {
-        if (!latestRes.ok) throw new Error('Failed to retrieve release');
-        release = await latestRes.json();
+        if (!tagRes.ok) throw new Error('Failed to retrieve release');
+        release = await tagRes.json();
       }
 
       setUploadingStatus('UPLOADING_FILE');
